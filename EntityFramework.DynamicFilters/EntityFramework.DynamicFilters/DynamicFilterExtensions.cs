@@ -185,15 +185,27 @@ namespace EntityFramework.DynamicFilters
             filterName = ScrubFilterName(filterName);
 
             ConcurrentDictionary<string, object> filterParams;
-            if (!_ScopedParameterValues.TryGetValue(context, out filterParams))
-                filterParams = _GlobalParameterValues;
-
             object value;
-            if (!filterParams.TryGetValue(filterName, out value))
-                return null;
 
-            var func = value as Func<object>;
-            return (func == null) ? value : func();
+            //  First try to get the value from _ScopedParameterValues
+            if (_ScopedParameterValues.TryGetValue(context, out filterParams))
+            {
+                if (filterParams.TryGetValue(filterName, out value))
+                {
+                    var func = value as Func<object>;
+                    return (func == null) ? value : func();
+                }
+            }
+
+            //  Then try _GlobalParameterValues
+            if (_GlobalParameterValues.TryGetValue(filterName, out value))
+            {
+                var func = value as Func<object>;
+                return (func == null) ? value : func();
+            }
+
+            //  Not found anywhere???
+            return null;
         }
 
         #endregion

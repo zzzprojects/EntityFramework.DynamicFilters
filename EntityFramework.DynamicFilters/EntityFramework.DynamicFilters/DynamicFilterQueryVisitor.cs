@@ -16,9 +16,13 @@ namespace EntityFramework.DynamicFilters
 
             foreach(var filter in filterList)
             {
+                //  Bind the filter parameter to a sql parameter
                 var binding = DbExpressionBuilder.Bind(current);
                 var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), filter.ColumnName);
-                current = DbExpressionBuilder.Filter(binding, DbExpressionBuilder.Equal(columnProperty, columnProperty.Property.TypeUsage.Parameter(filter.ParameterName)));
+                var param = columnProperty.Property.TypeUsage.Parameter(filter.ParameterName);
+
+                //  Creates an expression to match on the filter value *OR* a null filter value.  Null can be used to disable the filter completely.
+                current = DbExpressionBuilder.Filter(binding, DbExpressionBuilder.Or(DbExpressionBuilder.Equal(columnProperty, param), DbExpressionBuilder.IsNull(param)));
             }
 
             return current;
