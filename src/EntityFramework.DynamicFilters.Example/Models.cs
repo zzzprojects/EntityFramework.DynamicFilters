@@ -23,6 +23,12 @@ namespace EntityFramework.DynamicFilters.Example
         public string UserName { get; set; }
 
         public ICollection<BlogEntry> BlogEntries { get; set; }
+
+        /// <summary>
+        /// Column used to verify handling of Entity properties mapped to different conceptual property names.
+        /// </summary>
+        [Column("RemappedDBProp")]
+        public bool RemappedEntityProp { get; set; }
     }
 
     public class BlogEntry : ISoftDelete

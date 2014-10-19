@@ -1,4 +1,5 @@
-﻿using System.Data.Entity.Core.Common.CommandTrees;
+﻿using System.Collections.Generic;
+using System.Data.Entity.Core.Common.CommandTrees;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Linq;
 
@@ -18,7 +19,18 @@ namespace EntityFramework.DynamicFilters
             {
                 //  Bind the filter parameter to a sql parameter
                 var binding = DbExpressionBuilder.Bind(current);
-                var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), filter.ColumnName);
+
+                //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
+                //  It may be different from the entity property!
+                var edmType = binding.VariableType.EdmType as System.Data.Entity.Core.Metadata.Edm.EntityType;
+                if (edmType == null)
+                    continue;       //  ???
+                var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(filter.ColumnName))).FirstOrDefault();
+                if (edmProp == null)
+                    continue;       //  ???
+                //  database column name is now in edmProp.Name.  Use that instead of filter.ColumnName
+
+                var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), edmProp.Name);
                 var param = columnProperty.Property.TypeUsage.Parameter(filter.ParameterName);
 
                 //  Creates an expression to match on the filter value *OR* a null filter value.  Null can be used to disable the filter completely.

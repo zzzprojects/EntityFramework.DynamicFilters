@@ -2,6 +2,15 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.sln text eol=crlf
+*.config text eol=crlf
+*.sql text eol=crlf
+*.pubxml text eol=crlf
+*.css text eol=crlf
+*.js text eol=crlf
+*.html text eol=crlf
 
 ###############################################################################
 # Set default behavior for command prompt diff.

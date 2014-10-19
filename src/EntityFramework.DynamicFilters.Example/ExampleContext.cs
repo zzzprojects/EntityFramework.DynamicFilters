@@ -40,6 +40,9 @@ namespace EntityFramework.DynamicFilters.Example
 
             //  Global filter on any class implementing ISoftDelete to match on records with IsDeleted=false
             modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
+
+            //  Filter to test handling of entity properties that are mapped to a different conceptual name.
+            modelBuilder.Filter("ConceptualNameTest", (Account a) => a.RemappedEntityProp, false);
         }
     }
 
