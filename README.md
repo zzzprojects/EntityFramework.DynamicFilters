@@ -5,6 +5,12 @@ DynamicFilters allow you to create global and scoped filters for Entity Framewor
 
 Access to DynamicFilters is done via extension methods on DbContext and DbModelBuilder which are in the EntityFramework.DynamicFilters namespace.
 
+
+Installation
+-----------------------
+The package is available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
+
+
 Configuration
 -----------------------
 Initialize DynamicFilters in DbContext.OnModelCreating():
@@ -30,9 +36,9 @@ Filters can be defined on a specific entity class or an interface.  Below is an 
 modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
 ```
 
-Filter values can also be provided via a delegate/Func<Object> instead of a specific value (as shown in the above example).  This can allow you to vary the parameter value dynamically.  For example, a filter can be created on the UserID and be provided per http request.  Below is an example that obtains a "Person ID" from the Thread.CurrentPrincipal.  This delegate will be evaluated each time the query is executed so it will obtain the "Person ID" associated with each request.
+Filter values can also be provided via a delegate/Func<object> instead of a specific value (as shown in the above example).  This can allow you to vary the parameter value dynamically.  For example, a filter can be created on the UserID and be provided per http request.  Below is an example that obtains a "Person ID" from the Thread.CurrentPrincipal.  This delegate will be evaluated each time the query is executed so it will obtain the "Person ID" associated with each request.
 ```csharp
-modelBuilder.Filter("Notes_CurrentUser", (Note n) => n.PersonID, () => SessionPrincipal.PersonIDFromPrincipal(Thread.CurrentPrincipal));
+modelBuilder.Filter("Notes_CurrentUser", (Note n) => n.PersonID, () => GetPersonIDFromPrincipal(Thread.CurrentPrincipal));
 ```
 In this example, the Note entity is "owned" by the current user.  This filter will ensure that all queries made for Note entities will always be restricted to the current user and it will not be possible for users to retrieve notes for other users.
 
@@ -51,4 +57,6 @@ Or to disable that filter completely and return all records regardless of the va
 context.SetFilterScopedParameterValue("IsDeleted", null);
 ```
 
+-----------------------
 
+Credit to [jbogard](https://github.com/jbogard) for his [EntityFramework.Filters](https://github.com/jbogard/EntityFramework.Filters) project which was heavily used in my implementation.  While his approach is more powerful in terms of linq support, it does not allow filter parameters to be changed after the query has been executed (and cached by EF) the first time.
