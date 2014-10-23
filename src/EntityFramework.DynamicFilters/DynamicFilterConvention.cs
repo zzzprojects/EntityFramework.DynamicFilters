@@ -10,7 +10,7 @@ namespace EntityFramework.DynamicFilters
             var configuration = Types().Where(entityType.IsAssignableFrom);
             configuration.Configure(ctc =>
             {
-                var filterDefinition = new DynamicFilterDefinition(filterName, columnName);
+                var filterDefinition = new DynamicFilterDefinition(filterName, columnName, ctc.ClrType);
 
                 ctc.HasTableAnnotation(filterDefinition.AttributeName, filterDefinition);
             });

@@ -49,7 +49,7 @@ namespace EntityFramework.DynamicFilters
             where TEntity : class
         {
             filterName = ScrubFilterName(filterName);
-            var filterDefinition = new DynamicFilterDefinition(filterName, columnName);
+            var filterDefinition = new DynamicFilterDefinition(filterName, columnName, typeof(TEntity));
 
             config.HasTableAnnotation(filterDefinition.AttributeName, filterDefinition);
 

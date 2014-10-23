@@ -31,6 +31,11 @@ namespace EntityFramework.DynamicFilters.Example
         public bool RemappedEntityProp { get; set; }
     }
 
+    //  Tests issue with TPH inheritance causing duplicate annotation names being added to the model conventions
+    public class DerivedAccount : Account
+    {
+    }
+
     public class BlogEntry : ISoftDelete
     {
         [Key]
