@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data.Entity;
 
 namespace EntityFramework.DynamicFilters.Example
 {
@@ -61,7 +57,11 @@ namespace EntityFramework.DynamicFilters.Example
             ExampleContext.CurrentAccountID = account.ID;
 
             //  Query blog entries.  This will use the global filter created in ExampleContext.OnModelCreating.
-            var blogEntries = context.BlogEntries.ToList();
+            //  Filter on IsActive is to reproduce a situation seen with MySQL that was adding those filters and not enclosing them in ()'s so the
+            //  'or' condition here was not properly enclosed - caused our dynamic filters to not be used correctly.
+            bool? active = true;
+            var blogEntries = context.BlogEntries.Where(b => (!active.HasValue || (b.IsActive == active.Value))).ToList();
+            //var blogEntries = context.BlogEntries.ToList();
             System.Diagnostics.Debug.Assert(blogEntries.Count == expected);
 
             Console.WriteLine(string.Format("Current User = {0}: Selected {1} blog entries", userName, blogEntries.Count));

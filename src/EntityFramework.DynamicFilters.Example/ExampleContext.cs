@@ -1,13 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Data.Entity;
-using System.Data.Entity.Migrations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.Entity.Migrations.History;
 
 namespace EntityFramework.DynamicFilters.Example
 {
+
+    public class MySqlConfiguration : DbConfiguration
+    {
+        public MySqlConfiguration()
+        {
+            //  Necessary because MySQL doesn't allow key length > 767.  The default __MigrationHistory table exceeds that.
+            SetHistoryContext("MySql.Data.MySqlClient", (conn, schema) => new MySqlHistoryContext(conn, schema));
+        }
+    }
+
+    public class MySqlHistoryContext : HistoryContext
+    {
+        public MySqlHistoryContext(DbConnection existingConnection, string defaultSchema)
+            : base(existingConnection, defaultSchema)
+        {
+        }
+
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<HistoryRow>().Property(h => h.MigrationId).HasMaxLength(100).IsRequired();
+            modelBuilder.Entity<HistoryRow>().Property(h => h.ContextKey).HasMaxLength(200).IsRequired();
+        }
+    }
+
+
     public class ExampleContext : DbContext
     {
         //  A static/globally scoped value that will be used to restrict queries against the BlogEntries table.
@@ -59,10 +83,12 @@ namespace EntityFramework.DynamicFilters.Example
                 UserName = "homer",
                 BlogEntries = new List<BlogEntry>
                 {
-                    new BlogEntry { Body="Homer's first blog entry", IsDeleted=false},
-                    new BlogEntry { Body="Homer's second blog entry", IsDeleted=false},
-                    new BlogEntry { Body="Homer's third blog entry (deleted)", IsDeleted=true},
-                    new BlogEntry { Body="Homer's fourth blog entry (deleted)", IsDeleted=true},
+                    new BlogEntry { Body="Homer's first blog entry", IsDeleted=false, IsActive=true},
+                    new BlogEntry { Body="Homer's second blog entry", IsDeleted=false, IsActive=true},
+                    new BlogEntry { Body="Homer's third blog entry (deleted)", IsDeleted=true, IsActive=true},
+                    new BlogEntry { Body="Homer's fourth blog entry (deleted)", IsDeleted=true, IsActive=true},
+                    new BlogEntry { Body="Homer's 5th blog entry (inactive)", IsDeleted=false, IsActive=false},
+                    new BlogEntry { Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false},
                 }
             };
             context.Accounts.Add(homer);
@@ -72,11 +98,13 @@ namespace EntityFramework.DynamicFilters.Example
                 UserName = "bart",
                 BlogEntries = new List<BlogEntry>
                 {
-                    new BlogEntry { Body="Bart's first blog entry", IsDeleted=false},
-                    new BlogEntry { Body="Bart's second blog entry", IsDeleted=false},
-                    new BlogEntry { Body="Bart's third blog entry", IsDeleted=false},
-                    new BlogEntry { Body="Bart's fourth blog entry (deleted)", IsDeleted=true},
-                    new BlogEntry { Body="Bart's fifth blog entry (deleted)", IsDeleted=true},
+                    new BlogEntry { Body="Bart's first blog entry", IsDeleted=false, IsActive=true},
+                    new BlogEntry { Body="Bart's second blog entry", IsDeleted=false, IsActive=true},
+                    new BlogEntry { Body="Bart's third blog entry", IsDeleted=false, IsActive=true},
+                    new BlogEntry { Body="Bart's fourth blog entry (deleted)", IsDeleted=true, IsActive=true},
+                    new BlogEntry { Body="Bart's fifth blog entry (deleted)", IsDeleted=true, IsActive=true},
+                    new BlogEntry { Body="Bart's 6th blog entry (inactive)", IsDeleted=false, IsActive=false},
+                    new BlogEntry { Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false},
                 }
             };
             context.Accounts.Add(bart);
