@@ -16,13 +16,14 @@ namespace EntityFramework.DynamicFilters
             //  It also allows us to attach our dynamic filter into the same DbExpressionBinding so it will avoid
             //  creating a new sub-query in MS SQL Server.
 
-            if (!_InjectedDynamicFilters)
+            string entityName = expression.Input.Variable.ResultType.EdmType.Name;
+            if (!_InjectedDynamicFilters.Contains(entityName))
             {
                 var filterList = expression.Input.Variable.ResultType.EdmType.MetadataProperties
                                     .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
                                     .Select(m => m.Value as DynamicFilterDefinition);
 
-                var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filterList, expression.Input, expression.Predicate);
+                var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, expression.Input, expression.Predicate);
                 if (newFilterExpression != null)
                 {
                     //  If not null, a new DbFilterExpression has been created with our dynamic filters.
@@ -39,7 +40,8 @@ namespace EntityFramework.DynamicFilters
             //  Visit(DbFilterExpression) will be called first and our dynamic filters will have already been included.
             //  Otherwise, we do that here.
 
-            if (!_InjectedDynamicFilters)
+            string entityName = expression.Target.Name;
+            if (!_InjectedDynamicFilters.Contains(entityName))
             {
                 var filterList = expression.Target.ElementType.MetadataProperties
                     .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
@@ -50,7 +52,7 @@ namespace EntityFramework.DynamicFilters
                 {
                     var binding = DbExpressionBuilder.Bind(baseResult);
 
-                    var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filterList, binding, null);
+                    var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
                     if (newFilterExpression != null)
                     {
                         //  If not null, a new DbFilterExpression has been created with our dynamic filters.
@@ -62,13 +64,16 @@ namespace EntityFramework.DynamicFilters
             return base.Visit(expression);
         }
 
-        //  Track when we inject the dynamic filters so we don't do it twice.  If the query includes it's own filter (in .Where clause, for example) we need
-        //  to do it in the Visit(DbFilterExpression) because that will include the predicate of that filter.  Otherwise, only Visit(DbScanExpression) will
-        //  be called so we have to do it there.  Visit(DbScanExpression) will ALSO be called if a filter predicate was provided.
-        private bool _InjectedDynamicFilters;
-        private DbFilterExpression BuildFilterExpressionWithDynamicFilters(IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
+        //  Track when we inject the dynamic filters for each Entity so we don't do it twice.  If the query includes it's own filter 
+        //  (in .Where clause, for example) we need to do it in the Visit(DbFilterExpression) because that will include the predicate 
+        //  of that filter.  Otherwise, only Visit(DbScanExpression) will be called so we have to do it there.  Visit(DbScanExpression) 
+        //  will ALSO be called if a filter predicate was provided.
+        //  Must be tracked per Entity so that child properties that are Include()'d are also filtered correctly.
+        private HashSet<string> _InjectedDynamicFilters = new HashSet<string>();
+
+        private DbFilterExpression BuildFilterExpressionWithDynamicFilters(string entityName, IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
         {
-            _InjectedDynamicFilters = true;
+            _InjectedDynamicFilters.Add(entityName);
 
             if (!filterList.Any())
                 return null;
