@@ -53,5 +53,7 @@ namespace EntityFramework.DynamicFilters.Example
         public int? IntValue { get; set; }
 
         public string StringValue { get; set; }
+
+        public bool IsActive { get; set; }
     }
 }
