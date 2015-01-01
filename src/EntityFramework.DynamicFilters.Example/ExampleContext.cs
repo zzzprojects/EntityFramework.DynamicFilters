@@ -36,13 +36,27 @@ namespace EntityFramework.DynamicFilters.Example
             //  scope in your application.  In this example, CurrentAccountID is static.  If it were not static,
             //  setting the CurrentAccountID would have no effect since the Func would be using the instance of
             //  the DbContext that was used in the call to OnModelCreating - which only happens once per app lifetime.
-            modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b) => b.AccountID, () => CurrentAccountID);
+            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b) => b.AccountID, () => CurrentAccountID);
+            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b, Guid accountID) => b.AccountID==accountID, () => CurrentAccountID);
 
             //  Global filter on any class implementing ISoftDelete to match on records with IsDeleted=false
-            modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
+            //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
+            //modelBuilder.Filter("IsDeleted", (BlogEntry b, bool isDeleted) => (b.IsDeleted == isDeleted), false);
+
+            modelBuilder.Filter("BlogEntryFilter", (BlogEntry b, Guid accountID, bool isDeleted) => (b.AccountID == accountID) && (b.IsDeleted == isDeleted), 
+                                                () => CurrentAccountID, () => false);
 
             //  Filter to test handling of entity properties that are mapped to a different conceptual name.
-            modelBuilder.Filter("ConceptualNameTest", (Account a) => a.RemappedEntityProp, false);
+            //modelBuilder.Filter("ConceptualNameTest", (Account a) => a.RemappedEntityProp, false);
+            modelBuilder.Filter("ConceptualNameTest", (Account a, bool remappedEntityProp) => a.RemappedEntityProp == remappedEntityProp, false);
+
+
+            //  TODO: This generates invalid sql.  Creates where clause like this: WHERE  NOT ([Var_1].[IsDeleted])
+            //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => !d.IsDeleted);
+
+            //  TODO: Support Contains() in lambda
+            //List<Guid> accounts = new List<Guid> { Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF"), Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") };
+            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b, List<Guid> accountList) => accountList.Contains(b.AccountID), () => accounts);
         }
     }
 

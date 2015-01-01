@@ -49,5 +49,9 @@ namespace EntityFramework.DynamicFilters.Example
         public string Body { get; set; }
 
         public bool IsDeleted { get; set; }
+
+        public int? IntValue { get; set; }
+
+        public string StringValue { get; set; }
     }
 }
