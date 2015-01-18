@@ -208,9 +208,8 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("VisitParameter: {0}", node);
             var expression = base.VisitParameter(node);
 
-            var edmType = _Binding.VariableType.EdmType as EntityType;
-            if ((edmType == null) || edmType.Name.Equals(node.Type.Name))
-                return expression;      //  Ignore entity param
+            if (node.Type.IsClass || node.Type.IsInterface)
+                return expression;      //  Ignore class or interface param
 
             if (_Parameters.ContainsKey(node.Name))
                 return expression;      //  Already created sql parameter for this node.Name

@@ -65,7 +65,7 @@ namespace EntityFramework.DynamicFilters.Example
 
             //  Global filter on any class implementing ISoftDelete to match on records with IsDeleted=false
             //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
-            //modelBuilder.Filter("IsDeleted", (BlogEntry b, bool isDeleted) => (b.IsDeleted == isDeleted), false);
+            //modelBuilder.Filter("IsDeleted", (ISoftDelete b, bool isDeleted) => (b.IsDeleted == isDeleted), false);
 
             modelBuilder.Filter("BlogEntryFilter", (BlogEntry b, Guid accountID, bool isDeleted) => (b.AccountID == accountID) && (b.IsDeleted == isDeleted),
                                                 () => CurrentAccountID, () => false);
