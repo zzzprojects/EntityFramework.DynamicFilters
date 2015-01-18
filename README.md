@@ -3,12 +3,12 @@ EntityFramework.DynamicFilters
 
 DynamicFilters allow you to create global and scoped filters for Entity Framework queries.  The filters are automatically included in every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
 
-Access to DynamicFilters is done via extension methods on DbContext and DbModelBuilder which are in the EntityFramework.DynamicFilters namespace.
+Access to DynamicFilters is done via extension methods in the EntityFramework.DynamicFilters namespace on the DbContext and DbModelBuilder classes.
 
 
 Installation
 -----------------------
-The package is available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
+The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
 
 
 Configuration
@@ -28,7 +28,7 @@ protected override void OnModelCreating(DbModelBuilder modelBuilder)
 Defining Filters
 -----------------------
 
-Filters are fined in DbContext.OnModelCreating.  All filters have global scope and will be used by all DbContexts.  Each DbContext can also choose to provide a "scoped" filter value or can disable the filter by setting the value to null.  Scoped parameter changes will apply only to that DbContext and do not affect any existing or future DbContexts.
+Filters are fined in DbContext.OnModelCreating.  All filters have global scope and will be used by all DbContexts.  Each DbContext can also choose to provide a "scoped" filter value or can disable the filter via the DisableFilter() extension method.  Scoped parameter changes and filter disabling will apply only to that DbContext and do not affect any existing or future DbContexts.
 
 Filters can be defined on a specific entity class or an interface.  Below is an example of a "soft delete" filter created on an ISoftDelete interface.  This filter will apply to any entity that implements ISoftDelete and will automatically filter those entities by applying the condition "IsDeleted==false".
 
@@ -42,6 +42,26 @@ modelBuilder.Filter("Notes_CurrentUser", (Note n) => n.PersonID, () => GetPerson
 ```
 In this example, the Note entity is "owned" by the current user.  This filter will ensure that all queries made for Note entities will always be restricted to the current user and it will not be possible for users to retrieve notes for other users.
 
+Linq Filters
+-----------------------
+
+Filters can also be created using linq conditions and with multiple parameters.
+
+This Filter() command creates a filter that limits BlogEntry records by AccountID and an IsDeleted flag.  A parameter is created for each condition with parameter names "accountID" and "isDeleted":
+```csharp
+modelBuilder.Filter("BlogEntryFilter", 
+                    (BlogEntry b, Guid accountID, bool isDeleted) => (b.AccountID == accountID) && (b.IsDeleted == isDeleted), 
+                    () => GetPersonIDFromPrincipal(Thread.CurrentPrincipal),
+                    () => false);
+```
+
+The linq syntax is somewhat limited to boolean expressions but does support the Contains() operator on IEnumerable<<T>> to generate sql "in" clauses:
+```csharp
+var values = new List<int> { 1, 2, 3, 4, 5 };
+modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) => valueList.Contains(b.IntValue.Value), () => values);
+```
+
+If you require support for additional linq operators, please create an [issue](https://github.com/jcachat/EntityFramework.DynamicFilters/issues).
 
 Scoped Filter Parameter Values
 ------------------------------
@@ -52,10 +72,17 @@ To change the Soft Delete filter shown above to return only deleted records, you
 context.SetFilterScopedParameterValue("IsDeleted", true);
 ```
 
-Or to disable that filter completely and return all records regardless of the value of IsDeleted, set the value to null like this:
+If the filter contains multiple parameters, you must specify the name of the parameter to change like this:
 ```csharp
-context.SetFilterScopedParameterValue("IsDeleted", null);
+context.SetFilterScopedParameterValue("BlogEntryFilter", "accountID", 12345);
 ```
+
+Or to disable that filter completely and return all records regardless of the value of IsDeleted, use the DisableFilter extension method like this:
+```csharp
+context.DisableFilter("IsDeleted");
+```
+
+Global parameter values can also be changed using the SetFilterGlobalParameterValue extension method.
 
 -----------------------
 
