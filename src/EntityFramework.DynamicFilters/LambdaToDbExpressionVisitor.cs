@@ -424,7 +424,7 @@ namespace EntityFramework.DynamicFilters
                     return genericArgs[0];
             }
 
-            if (typeof(IEnumerable).IsAssignableFrom(type) || (type == typeof(object)))
+            if ((typeof(IEnumerable).IsAssignableFrom(type) && (type != typeof(String))) || (type == typeof(object)))
             {
                 //  Non-generic collection (such as ArrayList) are not supported.  We require that we are able to enforce correct
                 //  type matching between the collection and the db column.
