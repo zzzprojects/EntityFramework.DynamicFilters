@@ -61,26 +61,45 @@ namespace EntityFramework.DynamicFilters.Example
             //  setting the CurrentAccountID would have no effect since the Func would be using the instance of
             //  the DbContext that was used in the call to OnModelCreating - which only happens once per app lifetime.
             //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b) => b.AccountID, () => CurrentAccountID);
-            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b, Guid accountID) => b.AccountID==accountID, () => CurrentAccountID);
+            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b, Guid accountID) => b.AccountID == accountID, () => CurrentAccountID);
 
             //  Global filter on any class implementing ISoftDelete to match on records with IsDeleted=false
             //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => d.IsDeleted, false);
             //modelBuilder.Filter("IsDeleted", (BlogEntry b, bool isDeleted) => (b.IsDeleted == isDeleted), false);
 
-            modelBuilder.Filter("BlogEntryFilter", (BlogEntry b, Guid accountID, bool isDeleted) => (b.AccountID == accountID) && (b.IsDeleted == isDeleted), 
+            modelBuilder.Filter("BlogEntryFilter", (BlogEntry b, Guid accountID, bool isDeleted) => (b.AccountID == accountID) && (b.IsDeleted == isDeleted),
                                                 () => CurrentAccountID, () => false);
 
             //  Filter to test handling of entity properties that are mapped to a different conceptual name.
             //modelBuilder.Filter("ConceptualNameTest", (Account a) => a.RemappedEntityProp, false);
             modelBuilder.Filter("ConceptualNameTest", (Account a, bool remappedEntityProp) => a.RemappedEntityProp == remappedEntityProp, false);
 
+            //  Filters to test Contains() in linq filter:
+            //{
+            //    List<Guid> accounts = new List<Guid> { Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF"), Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") };
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, List<Guid> accountList) => accountList.Contains(b.AccountID), () => accounts);
+
+            //    var values = new List<int> { 1, 2, 3, 4, 5 };
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, List<int> valueList) => valueList.Contains(b.IntValue.Value), () => values);
+
+            //    var values = new List<string> { "1", "2", "3", "4", "5" };
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, List<string> valueList) => valueList.Contains(b.StringValue), () => values);
+
+            //    var values = new List<bool> { true, false };
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, List<bool> valueList) => valueList.Contains(b.IsDeleted), () => values);
+
+            //    var values = new List<DateTime> { new DateTime(2015, 1, 1), new DateTime(2015, 1, 2, 12, 34, 56, 789), new DateTime(2015, 1, 3) };
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, List<DateTime> valueList) => valueList.Contains(b.DateValue.Value), () => values);
+
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b) => (new List<int> { 1, 2, 3, 4, 5 }).Contains(b.IntValue.Value));
+
+            //    int value1 = 1;
+            //    int value2 = 2;
+            //    modelBuilder.Filter("BlogContainsTest", (BlogEntry b, int val1, int val2) => (new List<int> { val1, val2, 3, 4, 5 }).Contains(b.IntValue.Value), () => value1, () => value2);
+            //}
 
             //  TODO: This generates invalid sql.  Creates where clause like this: WHERE  NOT ([Var_1].[IsDeleted])
             //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => !d.IsDeleted);
-
-            //  TODO: Support Contains() in lambda
-            //List<Guid> accounts = new List<Guid> { Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF"), Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") };
-            //modelBuilder.Filter("BlogEntriesForCurrentUser", (BlogEntry b, List<Guid> accountList) => accountList.Contains(b.AccountID), () => accounts);
         }
     }
 

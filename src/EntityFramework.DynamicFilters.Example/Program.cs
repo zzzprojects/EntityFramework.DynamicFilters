@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 
@@ -10,6 +11,9 @@ namespace EntityFramework.DynamicFilters.Example
         {
             //  Run a query for each Account using the default/global filters.
             var context1 = new ExampleContext();
+
+            //var list = context1.BlogEntries.ToList();
+            //System.Diagnostics.Debug.Print("Got {0} items", list.Count());
 
             Console.WriteLine("");
             Console.WriteLine("Querying with IsDeleted filter enabled");

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure.Interception;
@@ -7,6 +9,7 @@ using System.Data.Entity.ModelConfiguration;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 namespace EntityFramework.DynamicFilters
 {
@@ -434,24 +437,114 @@ namespace EntityFramework.DynamicFilters
 
         #region Set Sql Parameters
 
-        internal static void SetSqlParameter(this DbContext context, DbParameter param)
+        internal static void SetSqlParameters(this DbContext context, DbCommand command)
         {
-            if (!param.ParameterName.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
-                return;
+            foreach (DbParameter param in command.Parameters)
+            {
+                if (!param.ParameterName.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
+                    continue;
 
-            //  parts are:
-            //  1 = Fixed string constant (DynamicFilterConstants.PARAMETER_NAME_PREFIX)
-            //  2 = Filter Name (delimiter char is scrubbed from this field when creating a filter)
-            //  3+ = Column Name (this can contain the delimiter char)
-            var parts = param.ParameterName.Split(new string[] { DynamicFilterConstants.DELIMETER }, StringSplitOptions.None);
-            if (parts.Length < 3)
-                return;
+                //  parts are:
+                //  1 = Fixed string constant (DynamicFilterConstants.PARAMETER_NAME_PREFIX)
+                //  2 = Filter Name (delimiter char is scrubbed from this field when creating a filter)
+                //  3+ = Column Name (this can contain the delimiter char)
+                var parts = param.ParameterName.Split(new string[] { DynamicFilterConstants.DELIMETER }, StringSplitOptions.None);
+                if (parts.Length < 3)
+                    continue;
 
-            object value = context.GetFilterParameterValue(parts[1], parts[2]);       //  Middle is the filter name
+                object value = context.GetFilterParameterValue(parts[1], parts[2]);       //  Middle is the filter name
 
-            //  If not found, leave as the default that EF assigned (which will be a DBNull and will disable the filter)
-            if (value != null)
-                param.Value = value;
+                //  If not found, leave as the default that EF assigned (which will be a DBNull and will disable the filter)
+                if (value == null)
+                    continue;
+
+                //  Check to see if it's a collection.  If so, this is an "In" parameter
+                var valueType = value.GetType();
+                if (valueType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(valueType))
+                {
+                    //  Generic collection.  The EF query created for this collection was an '=' condition.
+                    //  We need to convert this into an 'in' clause so that we can dynamically set the
+                    //  values in the collection.
+                    SetParameterList(value as IEnumerable, param, command);
+                }
+                else
+                    param.Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Set a collection of parameter values in place of a single parameter.  The '=' condition in the sql
+        /// command is changed to an 'in' expression.
+        /// </summary>
+        /// <param name="paramValueCollection"></param>
+        /// <param name="param"></param>
+        /// <param name="command"></param>
+        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command)
+        {
+            int paramStartIdx = command.CommandText.IndexOf(param.ParameterName);
+            int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
+
+            var inCondition = new StringBuilder();
+            inCondition.Append("in (@");
+            inCondition.Append(param.ParameterName);
+
+            bool isFirst = true;
+            foreach (var singleValue in paramValueCollection)
+            {
+                if (isFirst)
+                {
+                    //  The first item in the list is set as the value of the sql parameter
+                    param.Value = singleValue;
+                }
+                else
+                {
+                    //  Remaining valus must be inserted directly into the sql 'in' clause
+                    inCondition.AppendFormat(", {0}", QuotedValue(param, singleValue));
+                }
+
+                isFirst = false;
+            }
+
+            inCondition.Append(")");
+
+            command.CommandText = string.Concat(command.CommandText.Substring(0, startIdx),
+                                                inCondition,
+                                                command.CommandText.Substring(paramStartIdx + param.ParameterName.Length));
+        }
+
+        private static string QuotedValue(DbParameter param, object value)
+        {
+            if (value is bool)
+                return (bool)value ? "1" : "0";
+            if (value is DateTime)
+                return string.Format("'{0:yyyy-MM-dd HH:mm:ss.FFF}'", (DateTime)value);
+
+            if (DbTypeIsNumeric(param.DbType))
+                return value.ToString();
+            return string.Format("'{0}'", value);
+        }
+
+        private static bool DbTypeIsNumeric(DbType dbType)
+        {
+            switch (dbType)
+            {
+                case DbType.Byte:
+                case DbType.Currency:
+                case DbType.Decimal:
+                case DbType.Double:
+                case DbType.Int16:
+                case DbType.Int32:
+                case DbType.Int64:
+                case DbType.SByte:
+                case DbType.Single:
+                case DbType.UInt16:
+                case DbType.UInt32:
+                case DbType.UInt64:
+                case DbType.VarNumeric:
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion

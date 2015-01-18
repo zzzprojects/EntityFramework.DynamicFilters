@@ -39,8 +39,7 @@ namespace EntityFramework.DynamicFilters
             if ((command == null) || (command.Parameters == null) || (command.Parameters.Count == 0) || (context == null))
                 return;
 
-            foreach(DbParameter param in command.Parameters)
-                context.SetSqlParameter(param);
+            context.SetSqlParameters(command);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.Entity.Core.Common.CommandTrees;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
@@ -161,7 +162,16 @@ namespace EntityFramework.DynamicFilters
 
             var edmType = _Binding.VariableType.EdmType as EntityType;
 
-            string propertyName = expression.Member.Name;
+            string propertyName;
+            if (IsNullableType(expression.Member.ReflectedType))
+            {
+                var subExpression = expression.Expression as MemberExpression;
+                propertyName = subExpression.Member.Name;
+            }
+            else
+                propertyName = expression.Member.Name;
+
+
             DbPropertyExpression propertyExpression;
             if (!_Properties.TryGetValue(propertyName, out propertyExpression))
             {
@@ -206,15 +216,26 @@ namespace EntityFramework.DynamicFilters
                 return expression;      //  Already created sql parameter for this node.Name
 
             //  Create a new DbParameterReferenceExpression for this parameter.
-            var typeUsage = TypeUsageForPrimitiveType(node.Type);
-            string dynFilterParamName = _Filter.CreateDynamicFilterName(node.Name);
-            var param = typeUsage.Parameter(dynFilterParamName);
-
-            System.Diagnostics.Debug.Print("Created new parameter for {0}: {1}", node.Name, dynFilterParamName);
-            _Parameters.Add(node.Name, param);
+            var param = CreateParameter(node.Name, node.Type);
 
             MapExpressionToDbExpression(expression, param);
             return expression;
+        }
+
+        private DbParameterReferenceExpression CreateParameter(string name, Type type)
+        {
+            DbParameterReferenceExpression param;
+            if (_Parameters.TryGetValue(name, out param))
+                return param;
+
+            var typeUsage = TypeUsageForPrimitiveType(type);
+            string dynFilterParamName = _Filter.CreateDynamicFilterName(name);
+            param = typeUsage.Parameter(dynFilterParamName);
+
+            System.Diagnostics.Debug.Print("Created new parameter for {0}: {1}", name, dynFilterParamName);
+            _Parameters.Add(name, param);
+
+            return param;
         }
 
         protected override Expression VisitUnary(UnaryExpression node)
@@ -249,14 +270,92 @@ namespace EntityFramework.DynamicFilters
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             System.Diagnostics.Debug.Print("VisitMethodCall: {0}", node);
+            var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
-            //  TODO: Support this to handle Contains() by translating into a DbInExpression
-            //if (node.Method.Name == "Contains")
-            //    System.Diagnostics.Debug.Print("TODO: Found 'Contains' method call.  Need to map this to a DbInExpression");
+            if (node.Method.Name == "Contains")
+                MapContainsExpression(expression);
+            else
+                throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
 
-            throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
+            return expression;
+        }
 
-            //return base.VisitMethodCall(node);
+        private void MapContainsExpression(MethodCallExpression expression)
+        {
+            DbExpression argExpression = GetDbExpressionForExpression(expression.Arguments[0]);
+
+            DbExpression dbExpression;
+
+            var collectionObjExp = expression.Object as System.Linq.Expressions.ParameterExpression;
+            if (collectionObjExp != null)
+            {
+                //  collectionObjExp is a parameter expression.  This means the content of the collection is
+                //  dynamic.  DbInExpression only supports a fixed size list of constant values.
+                //  So the only way to handle a dynamic collection is for us to create a single Equals expression
+                //  with a DbParameterReference.  Then when we intercept that parameter, we will see that it's
+                //  for a collection and we will modify the SQL to change it from an "=" to an "in".  The single
+                //  Parameter Reference is set to the first value in the collection and the rest of the values
+                //  are inserted into the SQL "in" clause.
+                string paramName = collectionObjExp.Name;
+                Type paramType = PrimitiveTypeForType(collectionObjExp.Type);
+
+                var param = CreateParameter(paramName, paramType);
+                dbExpression = DbExpressionBuilder.Equal(argExpression, param);
+            }
+            else
+            {
+                var listExpression = expression.Object as ListInitExpression;
+                if (listExpression == null)
+                    throw new NotSupportedException(string.Format("Unsupported object type used in Contains() - type = {0}", expression.Object.GetType().Name));
+
+                //  This is a fixed size list that may contain parameter references or constant values.
+                //  This can be handled using either a DbInExpression (if all are constants) or with
+                //  a series of OR conditions.
+                //  Find all of the constant & parameter expressions.
+                var constantExpressionList = listExpression.Initializers
+                    .Select(i => i.Arguments.FirstOrDefault() as ConstantExpression)
+                    .Where(c => c != null)
+                    .Select(c => DbExpressionBuilder.Constant(c.Value))
+                    .ToList();
+                var parameterExpressionList = listExpression.Initializers
+                    .Select(i => i.Arguments.FirstOrDefault() as ParameterExpression)
+                    .Where(c => c != null)
+                    .Select(c => CreateParameter(c.Name, c.Type))
+                    .ToList();
+
+                if (constantExpressionList.Count + parameterExpressionList.Count != listExpression.Initializers.Count)
+                    throw new NotSupportedException(string.Format("Unrecognized parameters in Contains list"));
+
+                if (parameterExpressionList.Any())
+                {
+                    //  Have parameters so need to build a series of OR conditions so that we can include the
+                    //  DbParameterReferences.  EF will optimize this into an "in" condition but with our
+                    //  DbParameterReferences preserved (which is not possible with a DbInExpression).
+                    //  The DbParameterReferences will be intercepted as any other parameter.
+                    dbExpression = null;
+                    var allExpressions = parameterExpressionList.Cast<DbExpression>().Union(constantExpressionList.Cast<DbExpression>());
+                    foreach (var paramReference in allExpressions)
+                    {
+                        var equalsExpression = DbExpressionBuilder.Equal(argExpression, paramReference);
+                        if (dbExpression == null)
+                            dbExpression = equalsExpression;
+                        else
+                            dbExpression = dbExpression.Or(equalsExpression);
+                    }
+                }
+                else
+                {
+                    //  All values are constants so can use DbInExpression
+                    dbExpression = DbExpressionBuilder.In(argExpression, constantExpressionList);
+                }
+            }
+
+            //  TODO: Since we don't necessarily have a single parameter (we may have no parameters at all), we
+            //  don't have an easy way to add an "or" IsNull check so that we can disable the filter.  Would probably
+            //  need to add a new boolean parameter just for that purpose and then the parameter interceptor would
+            //  need to set it to true/false based on whether or not the filter is disabled.
+
+            MapExpressionToDbExpression(expression, dbExpression);
         }
 
         #endregion
@@ -279,14 +378,8 @@ namespace EntityFramework.DynamicFilters
 
         private TypeUsage TypeUsageForPrimitiveType(Type type)
         {
-            bool isNullable = (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
-
-            var genericArgs = type.GetGenericArguments();
-            if ((genericArgs != null) && (genericArgs.Length == 1))
-            {
-                //  Generic collection or nullable.  Need to find the primitive type of the generic arg
-                type = genericArgs[0];
-            }
+            bool isNullable = IsNullableType(type);
+            type = PrimitiveTypeForType(type);
 
             //  Find equivalent EdmType in CSpace.  This is a 1-to-1 mapping to CLR types except for the Geometry/Geography types
             //  (so not supporting those atm).
@@ -314,6 +407,37 @@ namespace EntityFramework.DynamicFilters
             }
 
             return TypeUsage.Create(primitiveType, facetList);
+        }
+
+        /// <summary>
+        /// Returns the primitive type of the Type.  If this is a collection type, this is the type of the objects inside the collection.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        private Type PrimitiveTypeForType(Type type)
+        {
+            if (type.IsGenericType)
+            {
+                //  Generic type of some sort.  Could be IEnumerable<T> or INullable<T>.  The primitive type is in the
+                //  Generic Arguments.
+                var genericArgs = type.GetGenericArguments();
+                if ((genericArgs != null) && (genericArgs.Length == 1))
+                    return genericArgs[0];
+            }
+
+            if (typeof(IEnumerable).IsAssignableFrom(type) || (type == typeof(object)))
+            {
+                //  Non-generic collection (such as ArrayList) are not supported.  We require that we are able to enforce correct
+                //  type matching between the collection and the db column.
+                throw new NotSupportedException("Non generic collections or System.Object types are not supported");
+            }
+
+            return type;
+        }
+
+        private bool IsNullableType(Type type)
+        {
+            return (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 
         #endregion
