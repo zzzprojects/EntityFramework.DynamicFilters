@@ -1,7 +1,9 @@
-EntityFramework.DynamicFilters
-==============================
+Dynamic Global Filters for Entity Framework
+===========================================
 
-DynamicFilters allow you to create global and scoped filters for Entity Framework queries.  The filters are automatically included in every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
+Create global and scoped filters for Entity Framework queries.  The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
+
+Filters can be created using boolean linq expressions and also support the Contains() operator.
 
 Access to DynamicFilters is done via extension methods in the EntityFramework.DynamicFilters namespace on the DbContext and DbModelBuilder classes.
 
@@ -83,7 +85,3 @@ context.DisableFilter("IsDeleted");
 ```
 
 Global parameter values can also be changed using the SetFilterGlobalParameterValue extension method.
-
------------------------
-
-Credit to [jbogard](https://github.com/jbogard) for his [EntityFramework.Filters](https://github.com/jbogard/EntityFramework.Filters) project which was heavily used in my implementation.  While his approach is more powerful in terms of linq support, it does not allow filter parameters to be changed after the query has been executed (and cached by EF) the first time.
