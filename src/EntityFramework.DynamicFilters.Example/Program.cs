@@ -11,8 +11,12 @@ namespace EntityFramework.DynamicFilters.Example
         {
             //  Run a query for each Account using the default/global filters.
             var context1 = new ExampleContext();
+            var secondContext = new SecondContext();
 
             //var list = context1.BlogEntries.ToList();
+            //System.Diagnostics.Debug.Print("Got {0} items", list.Count());
+
+            //list = secondContext.BlogEntries.ToList();
             //System.Diagnostics.Debug.Print("Got {0} items", list.Count());
 
             Console.WriteLine("");

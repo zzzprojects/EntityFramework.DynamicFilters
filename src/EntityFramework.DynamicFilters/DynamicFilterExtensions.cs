@@ -33,12 +33,18 @@ namespace EntityFramework.DynamicFilters
 
         #region Initialize
 
+        private static bool _Initialized;
+
         /// <summary>
-        /// Initialize the Dynamic Filters.  Call this in OnModelCreating().
+        /// Initialize the Dynamic Filters.  Adding a Filter now automatically calls this method.
         /// </summary>
         /// <param name="context"></param>
         public static void InitializeDynamicFilters(this DbContext context)
         {
+            if (_Initialized)
+                return;
+
+            _Initialized = true;
             DbInterception.Add(new DynamicFilterCommandInterceptor());
             DbInterception.Add(new DynamicFilterInterceptor());
         }
@@ -109,6 +115,8 @@ namespace EntityFramework.DynamicFilters
 
         public static void Filter<TEntity, TProperty>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, TProperty>> path, object globalValue = null)
         {
+            InitializeDynamicFilters(null);
+
             filterName = ScrubFilterName(filterName);
 
             //  If ParseColumnNameFromExpression returns null, path is a lambda expression, not a single column expression. 
@@ -197,6 +205,8 @@ namespace EntityFramework.DynamicFilters
 
         private static void Filter<TEntity>(DbModelBuilder modelBuilder, string filterName, LambdaExpression predicate, params object[] valueList)
         {
+            InitializeDynamicFilters(null);
+
             filterName = ScrubFilterName(filterName);
 
             modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate));

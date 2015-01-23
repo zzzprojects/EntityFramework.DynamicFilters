@@ -13,24 +13,10 @@ Installation
 The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
 
 
-Configuration
------------------------
-Initialize DynamicFilters in DbContext.OnModelCreating():
-
-```csharp
-protected override void OnModelCreating(DbModelBuilder modelBuilder)
-{
-    base.OnModelCreating(modelBuilder);
-
-    // Initialize EntityFramework.DynamicFilters
-    this.InitializeDynamicFilters();
-}
-```
-
 Defining Filters
 -----------------------
 
-Filters are fined in DbContext.OnModelCreating.  All filters have global scope and will be used by all DbContexts.  Each DbContext can also choose to provide a "scoped" filter value or can disable the filter via the DisableFilter() extension method.  Scoped parameter changes and filter disabling will apply only to that DbContext and do not affect any existing or future DbContexts.
+Filters are fined in DbContext.OnModelCreating().  All filters have global scope and will be used by all DbContexts.  Each DbContext can also choose to provide a "scoped" filter value or can disable the filter via the DisableFilter() extension method.  Scoped parameter changes and filter disabling will apply only to that DbContext and do not affect any existing or future DbContexts.
 
 Filters can be defined on a specific entity class or an interface.  Below is an example of a "soft delete" filter created on an ISoftDelete interface.  This filter will apply to any entity that implements ISoftDelete and will automatically filter those entities by applying the condition "IsDeleted==false".
 

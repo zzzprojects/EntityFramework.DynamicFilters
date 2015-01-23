@@ -31,18 +31,33 @@ namespace EntityFramework.DynamicFilters.Example
         }
     }
 
-
-    public class ExampleContext : DbContext
+    public class ExampleContext : ContextBase
     {
-        //  A static/globally scoped value that will be used to restrict queries against the BlogEntries table.
-        public static Guid CurrentAccountID { get; set; }
-
         public ExampleContext()
         {
-            Database.SetInitializer<ExampleContext>(new ContentInitializer());
+            Database.SetInitializer(new ContentInitializer<ExampleContext>());
             Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
             Database.Initialize(false);
         }
+    }
+
+    //  2nd (duplicate) DbContext to verify issues with multiple DbContexts being used at same time
+    //  (to fix issue where DynamicFilters were being double-initialized causing duplicate calls
+    //  to DynamicFilterInterceptor & DynamicFilterCommandInterceptor.
+    public class SecondContext : ContextBase
+    {
+        public SecondContext()
+        {
+            Database.SetInitializer(new ContentInitializer<SecondContext>());
+            Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
+            Database.Initialize(false);
+        }
+    }
+
+    public abstract class ContextBase : DbContext
+    {
+        //  A static/globally scoped value that will be used to restrict queries against the BlogEntries table.
+        public static Guid CurrentAccountID { get; set; }
 
         public DbSet<Account> Accounts { get; set; }
         public DbSet<BlogEntry> BlogEntries { get; set; }
@@ -50,9 +65,6 @@ namespace EntityFramework.DynamicFilters.Example
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Initialize the Dynamic Filters
-            this.InitializeDynamicFilters();
 
             //  Filter to restrict all queries on BlogEntries to only those for the current user.
             //  Global filter is used here with a delegate so that it's evaluated every time it's needed.
@@ -103,9 +115,10 @@ namespace EntityFramework.DynamicFilters.Example
         }
     }
 
-    public class ContentInitializer : DropCreateDatabaseAlways<ExampleContext>
+    public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
+        where T : ContextBase
     {
-        protected override void Seed(ExampleContext context)
+        protected override void Seed(T context)
         {
             System.Diagnostics.Debug.Print("Seeding db");
 
