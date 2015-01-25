@@ -51,9 +51,9 @@ modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) => valueL
 
 If you require support for additional linq operators, please create an [issue](https://github.com/jcachat/EntityFramework.DynamicFilters/issues).
 
-Scoped Filter Parameter Values
+Changing Filter Parameter Values
 ------------------------------
-Within a single DbContext instance, filter parameter values can also be changed or filters can be disabled.  These changes are scoped to only that DbContext instance and do not affect any other DbContext instances.
+Within a single DbContext instance, filter parameter values can also be changed.  These changes are scoped to only that DbContext instance and do not affect any other DbContext instances.
 
 To change the Soft Delete filter shown above to return only deleted records, you could do this:
 ```csharp
@@ -65,9 +65,13 @@ If the filter contains multiple parameters, you must specify the name of the par
 context.SetFilterScopedParameterValue("BlogEntryFilter", "accountID", 12345);
 ```
 
-Or to disable that filter completely and return all records regardless of the value of IsDeleted, use the DisableFilter extension method like this:
+Global parameter values can also be changed using the SetFilterGlobalParameterValue extension method.
+
+
+Disabling Filters
+------------------------------
+To disable s filter, use the DisableFilter extension method like this:
 ```csharp
 context.DisableFilter("IsDeleted");
 ```
 
-Global parameter values can also be changed using the SetFilterGlobalParameterValue extension method.

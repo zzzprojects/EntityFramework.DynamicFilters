@@ -54,62 +54,42 @@ namespace EntityFramework.DynamicFilters
             DbExpression leftExpression = GetDbExpressionForExpression(expression.Left);
             DbExpression rightExpression = GetDbExpressionForExpression(expression.Right);
 
+            DbExpression dbExpression;
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.Equal(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.Equal(leftExpression, rightExpression);
                     break;
                 case ExpressionType.NotEqual:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.NotEqual(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.NotEqual(leftExpression, rightExpression);
                     break;
                 case ExpressionType.GreaterThan:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.GreaterThan(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.GreaterThan(leftExpression, rightExpression);
                     break;
                 case ExpressionType.GreaterThanOrEqual:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.GreaterThanOrEqual(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.GreaterThanOrEqual(leftExpression, rightExpression);
                     break;
                 case ExpressionType.LessThan:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.LessThan(leftExpression, rightExpression));
+                    dbExpression =  DbExpressionBuilder.LessThan(leftExpression, rightExpression);
                     break;
                 case ExpressionType.LessThanOrEqual:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.LessThanOrEqual(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.LessThanOrEqual(leftExpression, rightExpression);
                     break;
 
                 case ExpressionType.AndAlso:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.And(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.And(leftExpression, rightExpression);
                     break;
                 case ExpressionType.OrElse:
-                    CreateBinaryExpression(expression, DbExpressionBuilder.Or(leftExpression, rightExpression));
+                    dbExpression = DbExpressionBuilder.Or(leftExpression, rightExpression);
                     break;
 
                 default:
                     throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitBinary", expression.NodeType));
             }
 
+            MapExpressionToDbExpression(expression, dbExpression);
+
             return expression;
-        }
-
-        /// <summary>
-        /// Creates the DbBinaryExpression for the given BinaryExpression.  Handles creating the "or param is null"
-        /// condition for any parameter references so that the filter can be disabled.
-        /// </summary>
-        /// <param name="expression"></param>
-        /// <param name="conditionExpression"></param>
-        private void CreateBinaryExpression(BinaryExpression expression, DbBinaryExpression binaryExpression)
-        {
-            var leftParam = binaryExpression.Left as DbParameterReferenceExpression;
-            var rightParam = binaryExpression.Right as DbParameterReferenceExpression;
-
-            //  If any of these are DbParameterReferenceExpressions, need to 'or' a null check against them.
-            //  This allows us to disable the parameter check (by setting the parameter value to null).
-            //  There is no other way to disable the filters since the query must be fully cached and can
-            //  never be rebuilt once it's cached.
-            if (leftParam != null)
-                binaryExpression = DbExpressionBuilder.Or(binaryExpression, DbExpressionBuilder.IsNull(leftParam));
-            if (rightParam != null)
-                binaryExpression = DbExpressionBuilder.Or(binaryExpression, DbExpressionBuilder.IsNull(rightParam));
-
-            MapExpressionToDbExpression(expression, binaryExpression);
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
@@ -348,11 +328,6 @@ namespace EntityFramework.DynamicFilters
                     dbExpression = DbExpressionBuilder.In(argExpression, constantExpressionList);
                 }
             }
-
-            //  TODO: Since we don't necessarily have a single parameter (we may have no parameters at all), we
-            //  don't have an easy way to add an "or" IsNull check so that we can disable the filter.  Would probably
-            //  need to add a new boolean parameter just for that purpose and then the parameter interceptor would
-            //  need to set it to true/false based on whether or not the filter is disabled.
 
             MapExpressionToDbExpression(expression, dbExpression);
         }

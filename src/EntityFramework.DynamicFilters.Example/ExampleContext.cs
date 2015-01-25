@@ -129,12 +129,12 @@ namespace EntityFramework.DynamicFilters.Example
                 UserName = "homer",
                 BlogEntries = new List<BlogEntry>
                 {
-                    new BlogEntry { Body="Homer's first blog entry", IsDeleted=false, IsActive=true},
-                    new BlogEntry { Body="Homer's second blog entry", IsDeleted=false, IsActive=true},
-                    new BlogEntry { Body="Homer's third blog entry (deleted)", IsDeleted=true, IsActive=true},
-                    new BlogEntry { Body="Homer's fourth blog entry (deleted)", IsDeleted=true, IsActive=true},
-                    new BlogEntry { Body="Homer's 5th blog entry (inactive)", IsDeleted=false, IsActive=false},
-                    new BlogEntry { Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false},
+                    new BlogEntry { Body="Homer's first blog entry", IsDeleted=false, IsActive=true, StringValue="1"},
+                    new BlogEntry { Body="Homer's second blog entry", IsDeleted=false, IsActive=true, StringValue="2"},
+                    new BlogEntry { Body="Homer's third blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="3"},
+                    new BlogEntry { Body="Homer's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="4"},
+                    new BlogEntry { Body="Homer's 5th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="5"},
+                    new BlogEntry { Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="6"},
                 }
             };
             context.Accounts.Add(homer);
@@ -144,13 +144,13 @@ namespace EntityFramework.DynamicFilters.Example
                 UserName = "bart",
                 BlogEntries = new List<BlogEntry>
                 {
-                    new BlogEntry { Body="Bart's first blog entry", IsDeleted=false, IsActive=true},
-                    new BlogEntry { Body="Bart's second blog entry", IsDeleted=false, IsActive=true},
-                    new BlogEntry { Body="Bart's third blog entry", IsDeleted=false, IsActive=true},
-                    new BlogEntry { Body="Bart's fourth blog entry (deleted)", IsDeleted=true, IsActive=true},
-                    new BlogEntry { Body="Bart's fifth blog entry (deleted)", IsDeleted=true, IsActive=true},
-                    new BlogEntry { Body="Bart's 6th blog entry (inactive)", IsDeleted=false, IsActive=false},
-                    new BlogEntry { Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false},
+                    new BlogEntry { Body="Bart's first blog entry", IsDeleted=false, IsActive=true, StringValue="7"},
+                    new BlogEntry { Body="Bart's second blog entry", IsDeleted=false, IsActive=true, StringValue="8"},
+                    new BlogEntry { Body="Bart's third blog entry", IsDeleted=false, IsActive=true, StringValue="9"},
+                    new BlogEntry { Body="Bart's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="10"},
+                    new BlogEntry { Body="Bart's fifth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="11"},
+                    new BlogEntry { Body="Bart's 6th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="12"},
+                    new BlogEntry { Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="13"},
                 }
             };
             context.Accounts.Add(bart);

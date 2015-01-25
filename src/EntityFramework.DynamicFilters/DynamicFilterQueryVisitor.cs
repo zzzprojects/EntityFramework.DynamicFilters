@@ -104,6 +104,7 @@ namespace EntityFramework.DynamicFilters
                     continue;       //  Already processed this filter - attribute was probably inherited in a base class
                 processedFilterNames.Add(filter.FilterName);
 
+                DbExpression dbExpression;
                 if (!string.IsNullOrEmpty(filter.ColumnName))
                 {
                     //  Single column equality filter
@@ -117,15 +118,25 @@ namespace EntityFramework.DynamicFilters
                     var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), edmProp.Name);
                     var param = columnProperty.Property.TypeUsage.Parameter(filter.CreateDynamicFilterName(filter.ColumnName));
 
-                    //  Create an expression to match on the filter value *OR* a null filter value.  Null can be used to disable the filter completely.
-                    conditionList.Add(DbExpressionBuilder.Or(DbExpressionBuilder.Equal(columnProperty, param), DbExpressionBuilder.IsNull(param)));
+                    dbExpression = DbExpressionBuilder.Equal(columnProperty, param);
                 }
                 else if (filter.Predicate != null)
                 {
                     //  Lambda expression filter
-                    var dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _ObjectContext);
-                    conditionList.Add(dbExpression);
+                    dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _ObjectContext);
                 }
+                else
+                    throw new System.ArgumentException(string.Format("Filter {0} does not contain a ColumnName or a Predicate!", filter.FilterName));
+
+                //  Create an expression to check to see if the filter has been disabled and include that check with the rest of the filter expression.
+                //  When this parameter is null, the filter is enabled.  It will be set to true (in DynamicFilterExtensions.GetFilterParameterValue) if
+                //  the filter has been disabled.
+                var boolPrimitiveType = _ObjectContext.MetadataWorkspace
+                    .GetPrimitiveTypes(DataSpace.CSpace)
+                    .Where(p => p.ClrEquivalentType == typeof(bool))
+                    .Single();
+                var isDisabledParam = DbExpressionBuilder.Parameter(TypeUsage.Create(boolPrimitiveType, null), filter.CreateFilterDisabledParameterName());
+                conditionList.Add(DbExpressionBuilder.Or(dbExpression, DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(isDisabledParam))));
             }
 
             int numConditions = conditionList.Count;

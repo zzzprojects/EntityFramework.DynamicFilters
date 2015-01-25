@@ -401,11 +401,12 @@ namespace EntityFramework.DynamicFilters
             {
                 if (contextFilters.TryGetValue(filterName, out filterParams))
                 {
-                    //  If filter is disabled, return null
-                    if (!filterParams.Enabled)
-                        return null;
-
-                    if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
+                    if (parameterName == DynamicFilterConstants.FILTER_DISABLED_NAME)
+                    {
+                        //  This parameter is for the "IsDisabled" check.  Return null if enabled or true if disabled.
+                        return filterParams.Enabled ? null : (object)true;
+                    }
+                    else if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
                     {
                         var func = value as Func<object>;
                         return (func == null) ? value : func();
@@ -464,7 +465,7 @@ namespace EntityFramework.DynamicFilters
 
                 object value = context.GetFilterParameterValue(parts[1], parts[2]);       //  Middle is the filter name
 
-                //  If not found, leave as the default that EF assigned (which will be a DBNull and will disable the filter)
+                //  If not found, leave as the default that EF assigned (which will be a DBNull)
                 if (value == null)
                     continue;
 

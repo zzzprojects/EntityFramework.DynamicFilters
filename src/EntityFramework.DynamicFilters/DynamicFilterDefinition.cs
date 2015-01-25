@@ -27,6 +27,11 @@ namespace EntityFramework.DynamicFilters
             return string.Concat(DynamicFilterConstants.PARAMETER_NAME_PREFIX, DynamicFilterConstants.DELIMETER, FilterName, DynamicFilterConstants.DELIMETER, parameterName);
         }
 
+        public string CreateFilterDisabledParameterName()
+        {
+            return string.Concat(DynamicFilterConstants.PARAMETER_NAME_PREFIX, DynamicFilterConstants.DELIMETER, FilterName, DynamicFilterConstants.DELIMETER, DynamicFilterConstants.FILTER_DISABLED_NAME);
+        }
+
         internal DynamicFilterDefinition(string filterName, LambdaExpression predicate, string columnName, Type clrType)
         {
             FilterName = filterName;

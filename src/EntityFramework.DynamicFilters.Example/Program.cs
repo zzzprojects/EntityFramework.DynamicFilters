@@ -11,10 +11,14 @@ namespace EntityFramework.DynamicFilters.Example
         {
             //  Run a query for each Account using the default/global filters.
             var context1 = new ExampleContext();
-            var secondContext = new SecondContext();
+            //var secondContext = new SecondContext();
 
             //var list = context1.BlogEntries.ToList();
-            //System.Diagnostics.Debug.Print("Got {0} items", list.Count());
+            //Console.WriteLine("Got {0} items", list.Count());
+
+            //context1.DisableFilter("BlogContainsTest");
+            //list = context1.BlogEntries.ToList();
+            //Console.WriteLine("Got {0} items", list.Count());
 
             //list = secondContext.BlogEntries.ToList();
             //System.Diagnostics.Debug.Print("Got {0} items", list.Count());
@@ -36,17 +40,9 @@ namespace EntityFramework.DynamicFilters.Example
                 Query(context2, "homer", 9, false);
                 Query(context2, "bart", 9, false);
 
-                //  Re-enable the filter and disable only the isDeleted check
+                //  Re-enable the filter and query for deleted records
                 context2.EnableFilter("BlogEntryFilter");
-                context2.SetFilterScopedParameterValue("BlogEntryFilter", "isDeleted", null);
-                Console.WriteLine("");
-                Console.WriteLine("Querying with BlogEntryFilter enabled and isDeleted check disabled");
-                Query(context2, "homer", 4, true);
-                Query(context2, "bart", 5, true);
-
-                //  Change isDeleted param to true to re-enable it
                 context2.SetFilterScopedParameterValue("BlogEntryFilter", "isDeleted", true);
-
                 Console.WriteLine("");
                 Console.WriteLine("Querying for deleted records only");
                 Query(context2, "homer", 2, true, true);
