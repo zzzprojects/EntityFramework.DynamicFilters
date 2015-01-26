@@ -135,7 +135,7 @@ namespace EntityFramework.DynamicFilters
                     .GetPrimitiveTypes(DataSpace.CSpace)
                     .Where(p => p.ClrEquivalentType == typeof(bool))
                     .Single();
-                var isDisabledParam = DbExpressionBuilder.Parameter(TypeUsage.Create(boolPrimitiveType, null), filter.CreateFilterDisabledParameterName());
+                var isDisabledParam = DbExpressionBuilder.Parameter(TypeUsage.Create(boolPrimitiveType, new List<Facet>()), filter.CreateFilterDisabledParameterName());
                 conditionList.Add(DbExpressionBuilder.Or(dbExpression, DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(isDisabledParam))));
             }
 
