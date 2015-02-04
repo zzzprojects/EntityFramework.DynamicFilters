@@ -97,31 +97,39 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("VisitConstant: {0}", node);
             var expression = base.VisitConstant(node);
 
-            if (node.Type == typeof(byte[]))
+            var type = node.Type;
+            if (IsNullableType(type))
+            {
+                var genericArgs = type.GetGenericArguments();
+                if ((genericArgs != null) && (genericArgs.Length == 1))
+                    type = genericArgs[0];
+            }
+
+            if (type == typeof(byte[]))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromBinary((byte[])node.Value));
-            else if (node.Type == typeof(bool))
+            else if (type == typeof(bool))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromBoolean((bool?)node.Value));
-            else if (node.Type == typeof(byte))
+            else if (type == typeof(byte))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromByte((byte?)node.Value));
-            else if (node.Type == typeof(DateTime))
+            else if (type == typeof(DateTime))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTime((DateTime?)node.Value));
-            else if (node.Type == typeof(DateTimeOffset))
+            else if (type == typeof(DateTimeOffset))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTimeOffset((DateTimeOffset?)node.Value));
-            else if (node.Type == typeof(decimal))
+            else if (type == typeof(decimal))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromDecimal((decimal?)node.Value));
-            else if (node.Type == typeof(double))
+            else if (type == typeof(double))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromDouble((double?)node.Value));
-            else if (node.Type == typeof(Guid))
+            else if (type == typeof(Guid))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromGuid((Guid?)node.Value));
-            else if (node.Type == typeof(Int16))
+            else if (type == typeof(Int16))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt16((Int16?)node.Value));
-            else if (node.Type == typeof(Int32))
+            else if (type == typeof(Int32))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?)node.Value));
-            else if (node.Type == typeof(Int64))
+            else if (type == typeof(Int64))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?)node.Value));
-            else if (node.Type == typeof(float))
+            else if (type == typeof(float))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromSingle((float?)node.Value));
-            else if (node.Type == typeof(string))
+            else if (type == typeof(string))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromString((string)node.Value));
             else
                 throw new NotImplementedException(string.Format("Unhandled Type of {0} for Constant value {1} in LambdaToDbExpressionVisitor.VisitConstant", node.Type.Name, node.Value ?? "null"));
