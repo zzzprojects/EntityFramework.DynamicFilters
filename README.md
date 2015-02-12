@@ -68,10 +68,22 @@ context.SetFilterScopedParameterValue("BlogEntryFilter", "accountID", 12345);
 Global parameter values can also be changed using the SetFilterGlobalParameterValue extension method.
 
 
-Disabling Filters
+Enabling and Disabling Filters
 ------------------------------
-To disable s filter, use the DisableFilter extension method like this:
+To disable a filter, use the DisableFilter extension method like this:
 ```csharp
 context.DisableFilter("IsDeleted");
 ```
+
+Filters can also be globally disabled after they are created in OnModelCreating:
+```csharp
+modelBuilder.DisableFilterGlobally("IsDeleted");
+```
+
+Globally disabled filters can then be selectively enabled as needed.  Enabling a globally disabled filter will apply only to that DbContext just like scoped parameter values.
+```csharp
+context.EnableFilter("IsDeleted");
+```
+
+However, note that if a query is executed with a filter disabled, Entity Framework will cache those entities internally.  If you then enable a filter, cached entities may be included in child collections that otherwise should not be.  Entity Framework caches per DbContext so if you find this to be an issue, you can avoid it by using a fresh DbContext.
 

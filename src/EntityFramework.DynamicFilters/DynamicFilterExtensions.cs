@@ -68,7 +68,7 @@ namespace EntityFramework.DynamicFilters
         /// <param name="globalValue">If not null, specifies a globally scoped value for this parameter</param>
         /// <returns></returns>
         [Obsolete("Use modelBuilder.Filter() instead")]
-        public static EntityTypeConfiguration<TEntity> Filter<TEntity>(this EntityTypeConfiguration<TEntity> config, 
+        public static EntityTypeConfiguration<TEntity> Filter<TEntity>(this EntityTypeConfiguration<TEntity> config,
                                                         string filterName, string columnName, object globalValue = null)
             where TEntity : class
         {
@@ -94,9 +94,9 @@ namespace EntityFramework.DynamicFilters
         /// <param name="path"></param>
         /// <param name="globalFuncValue">If not null, specifies a globally scoped value for this parameter as a delegate.</param>
         /// <returns></returns>
-        #pragma warning disable 618
+#pragma warning disable 618
         [Obsolete("Use modelBuilder.Filter() instead")]
-        public static EntityTypeConfiguration<TEntity> Filter<TEntity, TProperty>(this EntityTypeConfiguration<TEntity> config, 
+        public static EntityTypeConfiguration<TEntity> Filter<TEntity, TProperty>(this EntityTypeConfiguration<TEntity> config,
             string filterName, Expression<Func<TEntity, TProperty>> path, Func<object> globalFuncValue = null)
             where TEntity : class
         {
@@ -147,28 +147,28 @@ namespace EntityFramework.DynamicFilters
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
         }
 
-        public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate, 
+        public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
                                                     Func<T0> value0, Func<T1> value1)
             where TEntity : class
         {
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
         }
 
-        public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate, 
+        public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
                                                     T0 value0, T1 value1)
             where TEntity : class
         {
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
         }
 
-        public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate, 
+        public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
                                                         Func<T0> value0, Func<T1> value1, Func<T2> value2)
             where TEntity : class
         {
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
         }
 
-        public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate, 
+        public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
                                                         T0 value0, T1 value1, T2 value2)
             where TEntity : class
         {
@@ -250,6 +250,29 @@ namespace EntityFramework.DynamicFilters
             filterParams.Enabled = false;
         }
 
+        /// <summary>
+        /// Globally disable the filter.  Can be enabled as needed via DbContext.EnableFilter().
+        /// </summary>
+        /// <param name="modelBuilder"></param>
+        /// <param name="filterName"></param>
+        public static void DisableFilterGlobally(this DbModelBuilder modelBuilder, string filterName)
+        {
+            filterName = ScrubFilterName(filterName);
+
+            _GlobalParameterValues.AddOrUpdate(filterName,
+                (f) =>
+                {
+                    var newValues = new DynamicFilterParameters();
+                    newValues.Enabled = false;
+                    return newValues;
+                },
+                (f, currValues) =>
+                {
+                    currValues.Enabled = false;
+                    return currValues;
+                });
+        }
+
         #endregion
 
         #region Set Filter Parameter Values
@@ -304,6 +327,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="value"></param>
         public static void SetFilterScopedParameterValue(this DbContext context, string filterName, string parameterName, object value)
         {
+            filterName = ScrubFilterName(filterName);
+
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
 
             if (string.IsNullOrEmpty(parameterName))
@@ -388,6 +413,10 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         public static object GetFilterParameterValue(this DbContext context, string filterName, string parameterName)
         {
+            //  First check to see if this the Disabled parameter.
+            if (parameterName == DynamicFilterConstants.FILTER_DISABLED_NAME)
+                return context.IsFilterEnabled(filterName) ? null : (object)true;
+
             filterName = ScrubFilterName(filterName);
             if (parameterName == null)
                 parameterName = string.Empty;
@@ -401,12 +430,7 @@ namespace EntityFramework.DynamicFilters
             {
                 if (contextFilters.TryGetValue(filterName, out filterParams))
                 {
-                    if (parameterName == DynamicFilterConstants.FILTER_DISABLED_NAME)
-                    {
-                        //  This parameter is for the "IsDisabled" check.  Return null if enabled or true if disabled.
-                        return filterParams.Enabled ? null : (object)true;
-                    }
-                    else if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
+                    if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
                     {
                         var func = value as Func<object>;
                         return (func == null) ? value : func();
@@ -426,6 +450,40 @@ namespace EntityFramework.DynamicFilters
 
             //  Not found anywhere???
             return null;
+        }
+
+        /// <summary>
+        /// Checks to see if the filter is currently enabled based on the DbContext or global settings.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
+        /// <returns></returns>
+        public static bool IsFilterEnabled(this DbContext context, string filterName)
+        {
+            filterName = ScrubFilterName(filterName);
+
+            ConcurrentDictionary<string, DynamicFilterParameters> contextFilters;
+            DynamicFilterParameters filterParams;
+
+            //  If specifically enabled/disabled on local scope, that overrides anything global
+            if (_ScopedParameterValues.TryGetValue(context, out contextFilters))
+            {
+                if (contextFilters.TryGetValue(filterName, out filterParams))
+                {
+                    if (filterParams.Enabled.HasValue)
+                        return filterParams.Enabled.Value;
+                }
+            }
+
+            //  Otherwise, we look to the global Enabled flag.
+            if (_GlobalParameterValues.TryGetValue(filterName, out filterParams))
+            {
+                if (filterParams.Enabled.HasValue)
+                    return filterParams.Enabled.Value;
+            }
+
+            //  Otherwise, default to true
+            return true;
         }
 
         #endregion

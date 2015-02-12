@@ -8,13 +8,14 @@ namespace EntityFramework.DynamicFilters
 {
     public class DynamicFilterParameters
     {
-        public bool Enabled { get; set; }
+        //  Null will default to true but allows us to specifically enable/disable on the local scope level to
+        //  override a filter that may be globally disabled.
+        public bool? Enabled { get; set; }
 
         public ConcurrentDictionary<string, object> ParameterValues { get; private set; }
 
         public DynamicFilterParameters()
         {
-            Enabled = true;
             ParameterValues = new ConcurrentDictionary<string, object>();
         }
 
