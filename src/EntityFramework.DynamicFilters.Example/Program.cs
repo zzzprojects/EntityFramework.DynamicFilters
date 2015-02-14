@@ -11,6 +11,11 @@ namespace EntityFramework.DynamicFilters.Example
         {
             //  Run a query for each Account using the default/global filters.
             var context1 = new ExampleContext();
+
+            //  Test for multiple navigation properties - issue #17
+            var list = context1.EntityASet.Include(a => a.Nav1).Include(a => a.Nav2).Include(a => a.Nav3).ToList();
+            System.Diagnostics.Debug.Assert((list.Count == 2) && (list[0].Nav1 != null) && (list[0].Nav2 == null) && (list[1].Nav1 != null) && (list[1].Nav2 == null));
+
             //var secondContext = new SecondContext();
 
             //var list = context1.BlogEntries.ToList();

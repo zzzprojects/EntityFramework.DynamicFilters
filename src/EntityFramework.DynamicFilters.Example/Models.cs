@@ -57,4 +57,34 @@ namespace EntityFramework.DynamicFilters.Example
 
         public bool IsActive { get; set; }
     }
+
+
+    //  Entities to test multiple navigation properties
+
+    //  2nd ISoftDelete so it doesn't interfere with the filter tests on the other models
+    public interface IEntitySoftDelete
+    {
+        bool IsDeleted { get; set; }
+    }
+
+    public class EntityA : IEntitySoftDelete
+    {
+        [Key]
+        [Required]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+        public bool IsDeleted { get; set; }
+        public EntityB Nav1 { get; set; }
+        public EntityB Nav2 { get; set; }
+        public EntityA Nav3 { get; set; }
+    }
+
+    public class EntityB : IEntitySoftDelete
+    {
+        [Key]
+        [Required]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+        public bool IsDeleted { get; set; }
+    }
 }

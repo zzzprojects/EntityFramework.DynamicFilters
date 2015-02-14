@@ -62,6 +62,9 @@ namespace EntityFramework.DynamicFilters.Example
         public DbSet<Account> Accounts { get; set; }
         public DbSet<BlogEntry> BlogEntries { get; set; }
 
+        public DbSet<EntityA> EntityASet { get; set; }
+        public DbSet<EntityB> EntityBSet { get; set; }
+
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -112,6 +115,9 @@ namespace EntityFramework.DynamicFilters.Example
 
             //  TODO: This generates invalid sql.  Creates where clause like this: WHERE  NOT ([Var_1].[IsDeleted])
             //modelBuilder.Filter("IsDeleted", (ISoftDelete d) => !d.IsDeleted);
+
+            //  Multiple navigation property filter
+            modelBuilder.Filter("IsDeleted", (IEntitySoftDelete d) => d.IsDeleted, false);
         }
     }
 
@@ -155,6 +161,15 @@ namespace EntityFramework.DynamicFilters.Example
             };
             context.Accounts.Add(bart);
 
+            context.SaveChanges();
+
+
+            var a1 = new EntityA { IsDeleted = false, Nav1 = new EntityB { IsDeleted = false }, Nav2 = new EntityB { IsDeleted = true } };
+            var a2 = new EntityA { IsDeleted = false, Nav1 = new EntityB { IsDeleted = false }, Nav2 = new EntityB { IsDeleted = true }, Nav3 = a1 };
+            var a3 = new EntityA { IsDeleted = true };
+            context.EntityASet.Add(a1);
+            context.EntityASet.Add(a2);
+            context.EntityASet.Add(a3);
             context.SaveChanges();
         }
     }
