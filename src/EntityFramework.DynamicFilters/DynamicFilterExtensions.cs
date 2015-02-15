@@ -583,6 +583,9 @@ namespace EntityFramework.DynamicFilters
 
         private static string QuotedValue(DbParameter param, object value)
         {
+            if (value == null)
+                return "null";
+
             if (value is bool)
                 return (bool)value ? "1" : "0";
             if (value is DateTime)

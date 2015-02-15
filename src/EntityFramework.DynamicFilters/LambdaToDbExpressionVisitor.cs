@@ -301,9 +301,13 @@ namespace EntityFramework.DynamicFilters
                 //  Find all of the constant & parameter expressions.
                 var constantExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ConstantExpression)
-                    .Where(c => c != null)
+                    .Where(c => (c != null) && (c.Value != null))       //  null not supported - can only use DbConstant in "In" expression
                     .Select(c => DbExpressionBuilder.Constant(c.Value))
                     .ToList();
+                constantExpressionList.AddRange(listExpression.Initializers
+                    .Select(i => i.Arguments.FirstOrDefault() as UnaryExpression)
+                    .Where(c => (c != null) && (c.Operand is ConstantExpression))
+                    .Select(c => DbExpressionBuilder.Constant(((ConstantExpression)c.Operand).Value)));
                 var parameterExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ParameterExpression)
                     .Where(c => c != null)
@@ -311,7 +315,7 @@ namespace EntityFramework.DynamicFilters
                     .ToList();
 
                 if (constantExpressionList.Count + parameterExpressionList.Count != listExpression.Initializers.Count)
-                    throw new NotSupportedException(string.Format("Unrecognized parameters in Contains list"));
+                    throw new NotSupportedException(string.Format("Unrecognized parameters in Contains list.  Null parameters not supported."));
 
                 if (parameterExpressionList.Any())
                 {
