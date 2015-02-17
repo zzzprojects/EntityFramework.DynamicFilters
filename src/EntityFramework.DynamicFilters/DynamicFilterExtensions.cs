@@ -240,6 +240,16 @@ namespace EntityFramework.DynamicFilters
         }
 
         /// <summary>
+        /// Enable all filters.
+        /// </summary>
+        /// <param name="context"></param>
+        public static void EnableAllFilters(this DbContext context)
+        {
+            foreach (var filterName in _GlobalParameterValues.Keys.ToList())
+                EnableFilter(context, filterName);
+        }
+
+        /// <summary>
         /// Disable the filter within the current DbContext scope.
         /// </summary>
         /// <param name="context"></param>
@@ -248,6 +258,16 @@ namespace EntityFramework.DynamicFilters
         {
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
             filterParams.Enabled = false;
+        }
+
+        /// <summary>
+        /// Disable all filters within the current DbContext scope.
+        /// </summary>
+        /// <param name="context"></param>
+        public static void DisableAllFilters(this DbContext context)
+        {
+            foreach(var filterName in _GlobalParameterValues.Keys.ToList())
+                DisableFilter(context, filterName);
         }
 
         /// <summary>

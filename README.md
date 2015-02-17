@@ -85,5 +85,11 @@ Globally disabled filters can then be selectively enabled as needed.  Enabling a
 context.EnableFilter("IsDeleted");
 ```
 
+You can also mass enable/disable all filters within a DbContext at once:
+```
+context.DisableAllFilters();
+context.EnableAllFilters();
+```
+
 However, note that if a query is executed with a filter disabled, Entity Framework will cache those entities internally.  If you then enable a filter, cached entities may be included in child collections that otherwise should not be.  Entity Framework caches per DbContext so if you find this to be an issue, you can avoid it by using a fresh DbContext.
 
