@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DynamicFiltersTests
 {
-        //  Tests related to Contains() operator in lambda filters (issue #13
+    //  Tests related to Contains() operator in lambda filters (issue #13
     [TestClass]
     public class DisableFilterTests
     {
@@ -76,71 +76,71 @@ namespace DynamicFiltersTests
                 Assert.IsTrue((listB.Count == 4) && listB.All(a => (a.ID < 5)));
             }
         }
-    }
 
-    #region Models
+        #region Models
 
-    public class EntityA
-    {
-        [Key]
-        [Required]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public int ID { get; set; }
-    }
-
-    public class EntityB
-    {
-        [Key]
-        [Required]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public int ID { get; set; }
-    }
-
-    #endregion
-
-    #region TestContext
-
-    public class TestContext : DbContext
-    {
-        public DbSet<EntityA> EntityASet { get; set; }
-        public DbSet<EntityB> EntityBSet { get; set; }
-
-        public TestContext()
-            : base("TestContext")
+        public class EntityA
         {
-            Database.SetInitializer(new ContentInitializer<TestContext>());
-            Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-            Database.Initialize(false);
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
         }
 
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        public class EntityB
         {
-            base.OnModelCreating(modelBuilder);
-
-            //  Constant list filter
-            modelBuilder.Filter("EntityAFilter", (EntityA a, int value) => a.ID > value, () => 5);
-
-            //  Dynamic int list filter
-            modelBuilder.Filter("EntityBFilter", (EntityB b, int value) => b.ID < value, () => 5);
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
         }
-    }
 
-    public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-        where T : TestContext
-    {
-        protected override void Seed(T context)
+        #endregion
+
+        #region TestContext
+
+        public class TestContext : DbContext
         {
-            System.Diagnostics.Debug.Print("Seeding db");
+            public DbSet<EntityA> EntityASet { get; set; }
+            public DbSet<EntityB> EntityBSet { get; set; }
 
-            for (int i = 1; i <= 10; i++)
+            public TestContext()
+                : base("TestContext")
             {
-                context.EntityASet.Add(new EntityA { ID = i });
-                context.EntityBSet.Add(new EntityB { ID = i });
+                Database.SetInitializer(new ContentInitializer<TestContext>());
+                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
+                Database.Initialize(false);
             }
 
-            context.SaveChanges();
-        }
-    }
+            protected override void OnModelCreating(DbModelBuilder modelBuilder)
+            {
+                base.OnModelCreating(modelBuilder);
 
-    #endregion
+                //  Constant list filter
+                modelBuilder.Filter("EntityAFilter", (EntityA a, int value) => a.ID > value, () => 5);
+
+                //  Dynamic int list filter
+                modelBuilder.Filter("EntityBFilter", (EntityB b, int value) => b.ID < value, () => 5);
+            }
+        }
+
+        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
+            where T : TestContext
+        {
+            protected override void Seed(T context)
+            {
+                System.Diagnostics.Debug.Print("Seeding db");
+
+                for (int i = 1; i <= 10; i++)
+                {
+                    context.EntityASet.Add(new EntityA { ID = i });
+                    context.EntityBSet.Add(new EntityB { ID = i });
+                }
+
+                context.SaveChanges();
+            }
+        }
+
+        #endregion
+    }
 }

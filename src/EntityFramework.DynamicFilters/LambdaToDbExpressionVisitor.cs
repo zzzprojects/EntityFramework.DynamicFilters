@@ -51,45 +51,75 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("VisitBinary: {0}", node);
             var expression = base.VisitBinary(node) as BinaryExpression;
 
-            DbExpression leftExpression = GetDbExpressionForExpression(expression.Left);
-            DbExpression rightExpression = GetDbExpressionForExpression(expression.Right);
-
             DbExpression dbExpression;
-            switch (expression.NodeType)
+
+            //  Need special handling for comparisons against the null constant.  If we don't translate these
+            //  using an "IsNull" expression, EF will convert it literally as "= null" which doesn't work in SQL Server.
+            if (IsNullConstantExpression(expression.Right))
+                dbExpression = MapNullComparison(expression.Left, expression.NodeType);
+            else if (IsNullConstantExpression(expression.Left))
+                dbExpression = MapNullComparison(expression.Right, expression.NodeType);
+            else
             {
-                case ExpressionType.Equal:
-                    dbExpression = DbExpressionBuilder.Equal(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.NotEqual:
-                    dbExpression = DbExpressionBuilder.NotEqual(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.GreaterThan:
-                    dbExpression = DbExpressionBuilder.GreaterThan(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.GreaterThanOrEqual:
-                    dbExpression = DbExpressionBuilder.GreaterThanOrEqual(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.LessThan:
-                    dbExpression =  DbExpressionBuilder.LessThan(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.LessThanOrEqual:
-                    dbExpression = DbExpressionBuilder.LessThanOrEqual(leftExpression, rightExpression);
-                    break;
+                DbExpression leftExpression = GetDbExpressionForExpression(expression.Left);
+                DbExpression rightExpression = GetDbExpressionForExpression(expression.Right);
 
-                case ExpressionType.AndAlso:
-                    dbExpression = DbExpressionBuilder.And(leftExpression, rightExpression);
-                    break;
-                case ExpressionType.OrElse:
-                    dbExpression = DbExpressionBuilder.Or(leftExpression, rightExpression);
-                    break;
+                switch (expression.NodeType)
+                {
+                    case ExpressionType.Equal:
+                        dbExpression = DbExpressionBuilder.Equal(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.NotEqual:
+                        dbExpression = DbExpressionBuilder.NotEqual(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.GreaterThan:
+                        dbExpression = DbExpressionBuilder.GreaterThan(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.GreaterThanOrEqual:
+                        dbExpression = DbExpressionBuilder.GreaterThanOrEqual(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.LessThan:
+                        dbExpression = DbExpressionBuilder.LessThan(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.LessThanOrEqual:
+                        dbExpression = DbExpressionBuilder.LessThanOrEqual(leftExpression, rightExpression);
+                        break;
 
-                default:
-                    throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitBinary", expression.NodeType));
+                    case ExpressionType.AndAlso:
+                        dbExpression = DbExpressionBuilder.And(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.OrElse:
+                        dbExpression = DbExpressionBuilder.Or(leftExpression, rightExpression);
+                        break;
+
+                    default:
+                        throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitBinary", expression.NodeType));
+                }
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
 
             return expression;
+        }
+
+        /// <summary>
+        /// Maps a comparison of an expression to a "null" constant.
+        /// </summary>
+        /// <returns></returns>
+        private DbExpression MapNullComparison(Expression expression, ExpressionType comparisonType)
+        {
+            DbExpression dbExpression = DbExpressionBuilder.IsNull(GetDbExpressionForExpression(expression));
+
+            switch (comparisonType)
+            {
+                case ExpressionType.Equal:
+                    return dbExpression;
+                case ExpressionType.NotEqual:
+                    //  Creates expression: !([expression] is null)
+                    return DbExpressionBuilder.Not(dbExpression);
+            }
+
+            throw new NotImplementedException(string.Format("Unhandled comparisonType of {0} in LambdaToDbExpressionVisitor.MapNullComparison", comparisonType));
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
@@ -180,7 +210,24 @@ namespace EntityFramework.DynamicFilters
                 System.Diagnostics.Debug.Print("Created new property expression for {0}", propertyName);
             }
 
-            MapExpressionToDbExpression(expression, propertyExpression);
+            DbExpression dbExpression = propertyExpression;
+
+            if ((expression.Member != null) && (propertyName != expression.Member.Name))
+            {
+                //  This is a property accessor
+                if (expression.Member.Name == "HasValue")
+                {
+                    //  Map HasValue to !IsNull
+                    dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(propertyExpression));
+                }
+                else if (expression.Member.Name != "Value")
+                {
+                    //  Ignore Value - it's mapped for us, everything else is unsupported
+                    throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
+                }
+            }
+
+            MapExpressionToDbExpression(expression, dbExpression);
             return expression;
         }
 
@@ -424,6 +471,24 @@ namespace EntityFramework.DynamicFilters
         private bool IsNullableType(Type type)
         {
             return (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        }
+
+        /// <summary>
+        /// Returns true if the expression is for the "null" constant
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private bool IsNullConstantExpression(Expression expression)
+        {
+            UnaryExpression unaryExpr = expression as UnaryExpression;
+            if (unaryExpr == null)
+                return false;
+
+            var constantExpr = unaryExpr.Operand as ConstantExpression;
+            if (constantExpr == null)
+                return false;
+
+            return (constantExpr.Value == null);
         }
 
         #endregion

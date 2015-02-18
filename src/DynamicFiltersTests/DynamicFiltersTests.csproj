@@ -61,6 +61,7 @@
     <Compile Include="ContainsTests.cs" />
     <Compile Include="DisableFilterTests.cs" />
     <Compile Include="MultipleNavigationPropertiesTest.cs" />
+    <Compile Include="NullTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

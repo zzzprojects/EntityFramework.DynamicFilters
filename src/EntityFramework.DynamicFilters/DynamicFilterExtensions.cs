@@ -709,6 +709,13 @@ namespace EntityFramework.DynamicFilters
                 return null;
             }
 
+            var propertyExpression = body.Expression as MemberExpression;
+            if ((propertyExpression != null) && (propertyExpression.Member != null) && (propertyExpression.Member.Name != body.Member.Name))
+            {
+                //  The expression is a property accessor - i.e. field.HasValue.  It's a lambda expression/predicate
+                return null;
+            }
+
             return body.Member.Name;
         }
 
