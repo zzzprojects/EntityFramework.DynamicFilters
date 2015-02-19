@@ -580,15 +580,23 @@ namespace EntityFramework.DynamicFilters
             bool isFirst = true;
             foreach (var singleValue in paramValueCollection)
             {
+                object value = singleValue;
+                if (singleValue != null)
+                {
+                    //  If this is an Enum, need to cast it to an int
+                    if (singleValue.GetType().IsEnum)
+                        value = (int)singleValue;
+                }
+
                 if (isFirst)
                 {
                     //  The first item in the list is set as the value of the sql parameter
-                    param.Value = singleValue;
+                    param.Value = value;
                 }
                 else
                 {
                     //  Remaining valus must be inserted directly into the sql 'in' clause
-                    inCondition.AppendFormat(", {0}", QuotedValue(param, singleValue));
+                    inCondition.AppendFormat(", {0}", QuotedValue(param, value));
                 }
 
                 isFirst = false;

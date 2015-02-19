@@ -155,6 +155,8 @@ namespace EntityFramework.DynamicFilters
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt16((Int16?)node.Value));
             else if (type == typeof(Int32))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?)node.Value));
+            else if (type.IsEnum)
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32)node.Value));
             else if (type == typeof(Int64))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?)node.Value));
             else if (type == typeof(float))
@@ -349,12 +351,12 @@ namespace EntityFramework.DynamicFilters
                 var constantExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ConstantExpression)
                     .Where(c => (c != null) && (c.Value != null))       //  null not supported - can only use DbConstant in "In" expression
-                    .Select(c => DbExpressionBuilder.Constant(c.Value))
+                    .Select(c => CreateConstantExpression(c.Value))
                     .ToList();
                 constantExpressionList.AddRange(listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as UnaryExpression)
                     .Where(c => (c != null) && (c.Operand is ConstantExpression))
-                    .Select(c => DbExpressionBuilder.Constant(((ConstantExpression)c.Operand).Value)));
+                    .Select(c => CreateConstantExpression(((ConstantExpression)c.Operand).Value)));
                 var parameterExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ParameterExpression)
                     .Where(c => c != null)
@@ -389,6 +391,20 @@ namespace EntityFramework.DynamicFilters
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
+        }
+
+        private DbConstantExpression CreateConstantExpression(object value)
+        {
+            //  This is not currently supported (DbExpressionBuilder.Constant throws exceptions).  But, DbConstant has
+            //  other constructors available that do take nullable types.  Maybe those would work.
+            if (value == null)
+                throw new ApplicationException("null is not convertable to a DbConstantExpression");
+
+            //  Must map Enums to an int or EF/SQL will not know what to do with them.
+            if (value.GetType().IsEnum)
+                return DbExpressionBuilder.Constant((int)value);
+
+            return DbExpressionBuilder.Constant(value);
         }
 
         #endregion
@@ -449,6 +465,9 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         private Type PrimitiveTypeForType(Type type)
         {
+            if (type.IsEnum)
+                type = typeof(Int32);
+
             if (type.IsGenericType)
             {
                 //  Generic type of some sort.  Could be IEnumerable<T> or INullable<T>.  The primitive type is in the

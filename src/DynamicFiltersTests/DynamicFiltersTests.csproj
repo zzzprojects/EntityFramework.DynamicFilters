@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="AccountTests.cs" />
     <Compile Include="ContainsTests.cs" />
+    <Compile Include="DataTypeTests.cs" />
     <Compile Include="DisableFilterTests.cs" />
     <Compile Include="MultipleNavigationPropertiesTest.cs" />
     <Compile Include="NullTests.cs" />
