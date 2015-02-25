@@ -1,4 +1,8 @@
-﻿using System;
+﻿//#if (DEBUG)
+//#define DEBUGPRINT
+//#endif
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Entity.Core.Common.CommandTrees;
@@ -48,7 +52,10 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitBinary: {0}", node);
+#endif
+
             var expression = base.VisitBinary(node) as BinaryExpression;
 
             DbExpression dbExpression;
@@ -124,7 +131,10 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitConstant: {0}", node);
+#endif
+
             var expression = base.VisitConstant(node);
 
             var type = node.Type;
@@ -177,7 +187,10 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         protected override Expression VisitMember(MemberExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitMember: {0}", node);
+#endif
+
             var expression = base.VisitMember(node) as MemberExpression;
 
             var edmType = _Binding.VariableType.EdmType as EntityType;
@@ -209,7 +222,10 @@ namespace EntityFramework.DynamicFilters
 
                 propertyExpression = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(_Binding.VariableType, _Binding.VariableName), edmProp.Name);
                 _Properties.Add(propertyName, propertyExpression);
+
+#if (DEBUGPRINT)
                 System.Diagnostics.Debug.Print("Created new property expression for {0}", propertyName);
+#endif
             }
 
             DbExpression dbExpression = propertyExpression;
@@ -242,7 +258,10 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         protected override Expression VisitParameter(ParameterExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitParameter: {0}", node);
+#endif
+
             var expression = base.VisitParameter(node);
 
             if (node.Type.IsClass || node.Type.IsInterface)
@@ -268,7 +287,10 @@ namespace EntityFramework.DynamicFilters
             string dynFilterParamName = _Filter.CreateDynamicFilterName(name);
             param = typeUsage.Parameter(dynFilterParamName);
 
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("Created new parameter for {0}: {1}", name, dynFilterParamName);
+#endif
+
             _Parameters.Add(name, param);
 
             return param;
@@ -276,19 +298,22 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitUnary(UnaryExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitUnary: {0}", node);
+#endif
+
             var expression = base.VisitUnary(node) as UnaryExpression;
 
             DbExpression operandExpression = GetDbExpressionForExpression(expression.Operand);
 
-            switch(expression.NodeType)
+            switch (expression.NodeType)
             {
                 case ExpressionType.Not:
                     MapExpressionToDbExpression(expression, DbExpressionBuilder.Not(operandExpression));
                     break;
                 case ExpressionType.Convert:
                     MapExpressionToDbExpression(expression, DbExpressionBuilder.CastTo(operandExpression, TypeUsageForPrimitiveType(expression.Type)));
-                    break;                    
+                    break;
                 default:
                     throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitUnary", expression.NodeType));
             }
@@ -298,14 +323,20 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitConditional(ConditionalExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitConditional: {0}", node);
+#endif
+
             throw new NotImplementedException("Conditionals in Lambda expressions are not supported");
             //return base.VisitConditional(node);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+#if (DEBUGPRINT)
             System.Diagnostics.Debug.Print("VisitMethodCall: {0}", node);
+#endif
+
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
             if (node.Method.Name == "Contains")
