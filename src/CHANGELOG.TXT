@@ -1,0 +1,14 @@
+1.1: Fixed issue with TPH inheritance and improved query generation when entity has more than 1 filter.
+1.2: Fixed query generation of user specified linq filters (.Where() conditions) under MySQL not being properly enclosed in ()'s.  Fixed SQL Server query generation to not create embedded sub-queries when adding dynamic filters.
+1.2.1: Fixed included properties not being filtered.
+1.3.0: Added support for linq filters including Contains()
+1.3.1: Fixed issue with string in collection
+1.3.2: Fixed issue with InitializeDynamicFilters() being called multiple times if more than 1 DbContext is used.  Now no longer necessary to call it at all.
+1.3.3: Changed how filters are disabled.  Filters are no longer disabled using a null value on a parameter value.  Fixes not being able to disable filters that have multiple parameters or that use the Contains() operator.
+1.3.4: Fixed null reference exception under EF 6.1.2
+1.3.5: Fixed issue parsing constant compared against a nullable property
+1.3.5.1: Fixed bad NuGet package!
+1.3.6: Fixed issue with filters not being applied on multiple navigation properties of same class/interface.  Added DisableFilterGlobally().
+1.3.7: Added DisableAllFilters() and EnableAllFilters()
+1.3.8: Fixed several issues with comparisons against "null" and Nullable<T>.HasValue not translating to sql "is null"
+1.3.9: Support enums in lamda filters.  Fixed issue disabling a filter with no parameters.

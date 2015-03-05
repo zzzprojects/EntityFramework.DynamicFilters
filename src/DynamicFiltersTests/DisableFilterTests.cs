@@ -77,6 +77,21 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void DisableFilter_DisableNoParamFilter()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                var list = context.EntityCSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+
+                context.DisableFilter("EntityCFilter");
+                list = context.EntityCSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -95,6 +110,14 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
         }
 
+        public class EntityC
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -103,6 +126,7 @@ namespace DynamicFiltersTests
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
+            public DbSet<EntityC> EntityCSet { get; set; }
 
             public TestContext()
                 : base("TestContext")
@@ -121,6 +145,9 @@ namespace DynamicFiltersTests
 
                 //  Dynamic int list filter
                 modelBuilder.Filter("EntityBFilter", (EntityB b, int value) => b.ID < value, () => 5);
+
+                //  No parmeter filter (issue #22)
+                modelBuilder.Filter("EntityCFilter", (EntityC c) => c.ID < 5);
             }
         }
 
@@ -135,6 +162,7 @@ namespace DynamicFiltersTests
                 {
                     context.EntityASet.Add(new EntityA { ID = i });
                     context.EntityBSet.Add(new EntityB { ID = i });
+                    context.EntityCSet.Add(new EntityC { ID = i });
                 }
 
                 context.SaveChanges();

@@ -77,6 +77,9 @@ namespace EntityFramework.DynamicFilters
 
             config.HasTableAnnotation(filterDefinition.AttributeName, filterDefinition);
 
+            //  Always add the filter to _GlobalParameterValues - need it to be able to disable it
+            _GlobalParameterValues.TryAdd(filterName, new DynamicFilterParameters());
+
             if (globalValue != null)
                 SetFilterGlobalParameterValue(null, filterName, columnName, globalValue);
 
@@ -126,6 +129,9 @@ namespace EntityFramework.DynamicFilters
                 predicate = path;
 
             modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate, columnName));
+
+            //  Always add the filter to _GlobalParameterValues - need it to be able to disable it
+            _GlobalParameterValues.TryAdd(filterName, new DynamicFilterParameters());
 
             if (globalValue != null)
                 SetFilterGlobalParameterValue(null, filterName, columnName, globalValue);
@@ -210,6 +216,9 @@ namespace EntityFramework.DynamicFilters
             filterName = ScrubFilterName(filterName);
 
             modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate));
+
+            //  Always add the filter to _GlobalParameterValues - need it to be able to disable it
+            _GlobalParameterValues.TryAdd(filterName, new DynamicFilterParameters());
 
             int numParams = predicate.Parameters == null ? 0 : predicate.Parameters.Count;
             int numValues = valueList == null ? 0 : valueList.Length;
