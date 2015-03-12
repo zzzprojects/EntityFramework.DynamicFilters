@@ -550,7 +550,16 @@ namespace EntityFramework.DynamicFilters
                 if (parts.Length < 3)
                     continue;
 
-                object value = context.GetFilterParameterValue(parts[1], parts[2]);       //  Middle is the filter name
+                //  If Column contains _ character, it will be split up.  Need to re-combine it.  Delimiter has to be
+                //  a character that is valid in a C# variable name (or EF will throw an exception when setting it).
+                string columnName = parts[2];
+                if (parts.Length > 3)
+                {
+                    for (int i = 3; i < parts.Length; i++)
+                        columnName = string.Concat(columnName, "_", parts[i]);
+                }
+
+                object value = context.GetFilterParameterValue(parts[1], columnName);       //  Middle is the filter name
 
                 //  If not found, leave as the default that EF assigned (which will be a DBNull)
                 if (value == null)

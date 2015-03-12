@@ -62,6 +62,7 @@
     <Compile Include="DataTypeTests.cs" />
     <Compile Include="DisableFilterTests.cs" />
     <Compile Include="MultipleNavigationPropertiesTest.cs" />
+    <Compile Include="NameTests.cs" />
     <Compile Include="NullTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
