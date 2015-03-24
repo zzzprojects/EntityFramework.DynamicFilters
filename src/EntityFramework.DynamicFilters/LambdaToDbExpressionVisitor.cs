@@ -339,10 +339,17 @@ namespace EntityFramework.DynamicFilters
 
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
-            if (node.Method.Name == "Contains")
-                MapContainsExpression(expression);
-            else
-                throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
+            switch(node.Method.Name)
+            {
+                case "Contains":
+                    MapContainsExpression(expression);
+                    break;
+                case "StartsWith":
+                    MapStartsWithExpression(expression);
+                    break;
+                default:
+                    throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
+            }
 
             return expression;
         }
@@ -353,7 +360,7 @@ namespace EntityFramework.DynamicFilters
 
             DbExpression dbExpression;
 
-            var collectionObjExp = expression.Object as System.Linq.Expressions.ParameterExpression;
+            var collectionObjExp = expression.Object as ParameterExpression;
             if (collectionObjExp != null)
             {
                 //  collectionObjExp is a parameter expression.  This means the content of the collection is
@@ -424,6 +431,37 @@ namespace EntityFramework.DynamicFilters
             MapExpressionToDbExpression(expression, dbExpression);
         }
 
+        private void MapStartsWithExpression(MethodCallExpression expression)
+        {
+            if ((expression.Arguments == null) || (expression.Arguments.Count != 1))
+                throw new ApplicationException("Did not find exactly 1 Argument to StartsWith function");
+
+            DbExpression srcExpression = GetDbExpressionForExpression(expression.Object);
+
+            DbExpression dbExpression;
+
+            if (expression.Arguments[0] is ConstantExpression)
+            {
+                var constantExpression = GetDbExpressionForExpression(expression.Arguments[0]) as DbConstantExpression;
+                if ((constantExpression == null) || (constantExpression.Value == null))
+                    throw new NullReferenceException("Parameter to StartsWith cannot be null");
+
+                dbExpression = DbExpressionBuilder.Like(srcExpression, DbExpressionBuilder.Constant(constantExpression.Value.ToString() + "%"));
+            }
+            else
+            {
+                var argExpression = GetDbExpressionForExpression(expression.Arguments[0]);
+
+                //  Note: Can also do this using StartsWith function on srcExpression (which avoids having to hardcode the % character).
+                //  It works but generates some crazy conditions using charindex which I don't think will use indexes as well as "like"...
+                //dbExpression = DbExpressionBuilder.Equal(DbExpressionBuilder.True, srcExpression.StartsWith(argExpression));
+
+                dbExpression = DbExpressionBuilder.Like(srcExpression, argExpression.Concat(DbExpressionBuilder.Constant("%")));
+            }
+
+            MapExpressionToDbExpression(expression, dbExpression);
+        }
+
         private DbConstantExpression CreateConstantExpression(object value)
         {
             //  This is not currently supported (DbExpressionBuilder.Constant throws exceptions).  But, DbConstant has
@@ -449,6 +487,15 @@ namespace EntityFramework.DynamicFilters
 
         private DbExpression GetDbExpressionForExpression(Expression expression)
         {
+            var paramExpression = expression as ParameterExpression;
+            if (paramExpression != null)
+            {
+                string paramName = paramExpression.Name;
+                Type paramType = PrimitiveTypeForType(paramExpression.Type);
+
+                return CreateParameter(paramName, paramType);
+            }
+
             DbExpression dbExpression;
             if (!_ExpressionToDbExpressionMap.TryGetValue(expression, out dbExpression))
                 throw new FormatException(string.Format("DbExpression not found for expression: {0}", expression));

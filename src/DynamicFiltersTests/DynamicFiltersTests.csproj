@@ -58,6 +58,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AccountTests.cs" />
+    <Compile Include="StartsWithTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="DataTypeTests.cs" />
     <Compile Include="DisableFilterTests.cs" />

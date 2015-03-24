@@ -19,7 +19,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityASet.ToList();
-                Assert.IsTrue(list.All(a => (a.ID == 2) || (a.ID == 4) || (a.ID == 6) || (a.ID == 8) || (a.ID == 10)));
+                Assert.IsTrue((list.Count == 5) && list.All(a => (a.ID == 2) || (a.ID == 4) || (a.ID == 6) || (a.ID == 8) || (a.ID == 10)));
             }
         }
 
@@ -29,7 +29,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityBSet.ToList();
-                Assert.IsTrue(list.All(b => (b.ID >= 1) && (b.ID <= 5)));
+                Assert.IsTrue((list.Count == 5) && list.All(b => (b.ID >= 1) && (b.ID <= 5)));
             }
         }
 
@@ -39,7 +39,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityCSet.ToList();
-                Assert.IsTrue(list.All(b => (b.ID >= 6) && (b.ID <= 10)));
+                Assert.IsTrue((list.Count == 5) && list.All(b => (b.ID >= 6) && (b.ID <= 10)));
             }
         }
 
@@ -49,7 +49,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityDSet.ToList();
-                Assert.IsTrue(list.All(d => (d.IntValue.Value == 2) || (d.IntValue.Value == 4) || (d.IntValue.Value == 6) || (d.IntValue.Value == 8) || (d.IntValue.Value == 10)));
+                Assert.IsTrue((list.Count == 5) && list.All(d => (d.IntValue.Value == 2) || (d.IntValue.Value == 4) || (d.IntValue.Value == 6) || (d.IntValue.Value == 8) || (d.IntValue.Value == 10)));
             }
         }
 
@@ -59,7 +59,9 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityESet.ToList();
-                Assert.IsTrue(list.All(e => ((e.IntValue.Value >= 1) && (e.IntValue.Value <= 4)) || !e.IntValue.HasValue));
+
+                //  Note: SQL Server does not return records using "in (null)" syntax...
+                Assert.IsTrue((list.Count == 4) && list.All(e => ((e.IntValue.Value >= 1) && (e.IntValue.Value <= 4))));
             }
         }
 
@@ -69,7 +71,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityFSet.ToList();
-                Assert.IsTrue(list.All(f => (f.IntValue.Value >= 6) && (f.IntValue.Value <= 10)));
+                Assert.IsTrue((list.Count == 5) && list.All(f => (f.IntValue.Value >= 6) && (f.IntValue.Value <= 10)));
             }
         }
 
@@ -79,7 +81,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityGSet.ToList();
-                Assert.IsTrue(list.All(g => (g.StrValue == "1") || (g.StrValue == "2") || (g.StrValue == "3") || (g.StrValue == "4") || (g.StrValue == "5")));
+                Assert.IsTrue((list.Count == 5) && list.All(g => (g.StrValue == "1") || (g.StrValue == "2") || (g.StrValue == "3") || (g.StrValue == "4") || (g.StrValue == "5")));
             }
         }
 
@@ -89,7 +91,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityHSet.ToList();
-                Assert.IsTrue(list.All(g => (g.BoolValue == false)));
+                Assert.IsTrue((list.Count == 1) && list.All(g => (g.BoolValue == false)));
             }
         }
 
@@ -99,7 +101,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityISet.ToList();
-                Assert.IsTrue(list.All(i => (i.GuidValue == Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF")) || (i.GuidValue == Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF"))));
+                Assert.IsTrue((list.Count == 2) && list.All(i => (i.GuidValue == Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF")) || (i.GuidValue == Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF"))));
             }
         }
 
@@ -109,7 +111,7 @@ namespace DynamicFiltersTests
             using (var context1 = new TestContext())
             {
                 var list = context1.EntityJSet.ToList();
-                Assert.IsTrue(list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
+                Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
             }
         }
 
@@ -252,6 +254,7 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityDFilter", (EntityD d) => (new List<int?> { 2, 4, 6, 8, 10 }).Contains(d.IntValue.Value));
 
                 //  Dynamic int list filter on nullable int
+                //  Note: SQL Server does not return records using "in (null)" syntax...
                 modelBuilder.Filter("EntityEFilter", (EntityE e, List<int?> valueList) => valueList.Contains(e.IntValue.Value), () => new List<int?> { 1, 2, 3, 4, null });
 
                 //  Constant nullable list that has 2 item values that are parmeterized
@@ -285,6 +288,7 @@ namespace DynamicFiltersTests
                     context.EntityGSet.Add(new EntityG { StrValue = i.ToString() });
                 }
 
+                //  Note: SQL Server does not return records using "in (null)" syntax...
                 context.EntityESet.Add(new EntityE());      //  For a null IntValue record
 
                 context.EntityHSet.Add(new EntityH { BoolValue = true });
