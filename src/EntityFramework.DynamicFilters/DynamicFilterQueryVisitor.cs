@@ -115,11 +115,9 @@ namespace EntityFramework.DynamicFilters
                 //  Create an expression to check to see if the filter has been disabled and include that check with the rest of the filter expression.
                 //  When this parameter is null, the filter is enabled.  It will be set to true (in DynamicFilterExtensions.GetFilterParameterValue) if
                 //  the filter has been disabled.
-                var boolPrimitiveType = _ObjectContext.MetadataWorkspace
-                    .GetPrimitiveTypes(DataSpace.CSpace)
-                    .Where(p => p.ClrEquivalentType == typeof(bool))
-                    .Single();
-                var isDisabledParam = DbExpressionBuilder.Parameter(TypeUsage.Create(boolPrimitiveType, new List<Facet>()), filter.CreateFilterDisabledParameterName());
+                var boolPrimitiveType = LambdaToDbExpressionVisitor.TypeUsageForPrimitiveType(typeof(bool?), _ObjectContext);
+                var isDisabledParam = boolPrimitiveType.Parameter(filter.CreateFilterDisabledParameterName());
+
                 conditionList.Add(DbExpressionBuilder.Or(dbExpression, DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(isDisabledParam))));
             }
 

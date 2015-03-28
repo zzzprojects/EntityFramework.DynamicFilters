@@ -505,12 +505,17 @@ namespace EntityFramework.DynamicFilters
 
         private TypeUsage TypeUsageForPrimitiveType(Type type)
         {
+            return TypeUsageForPrimitiveType(type, _ObjectContext);
+        }
+
+        public static TypeUsage TypeUsageForPrimitiveType(Type type, ObjectContext objectContext)
+        {
             bool isNullable = IsNullableType(type);
             type = PrimitiveTypeForType(type);
 
             //  Find equivalent EdmType in CSpace.  This is a 1-to-1 mapping to CLR types except for the Geometry/Geography types
             //  (so not supporting those atm).
-            var primitiveTypeList = _ObjectContext.MetadataWorkspace
+            var primitiveTypeList = objectContext.MetadataWorkspace
                 .GetPrimitiveTypes(DataSpace.CSpace)
                 .Where(p => p.ClrEquivalentType == type)
                 .ToList();
@@ -541,7 +546,7 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        private Type PrimitiveTypeForType(Type type)
+        private static Type PrimitiveTypeForType(Type type)
         {
             if (type.IsEnum)
                 type = typeof(Int32);
@@ -565,7 +570,7 @@ namespace EntityFramework.DynamicFilters
             return type;
         }
 
-        private bool IsNullableType(Type type)
+        private static bool IsNullableType(Type type)
         {
             return (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
