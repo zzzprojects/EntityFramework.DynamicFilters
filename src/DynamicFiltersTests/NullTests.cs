@@ -69,6 +69,31 @@ namespace DynamicFiltersTests
             }
         }
 
+        //  This test currently fails
+        //[TestMethod]
+        //public void NullableType_NullIntEquals()
+        //{
+        //    using (var context = new TestContext())
+        //    {
+        //        var list = context.EntityESet.ToList();
+        //        Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
+        //    }
+        //}
+
+        /// <summary>
+        /// Tests checking !param.HasValue
+        /// </summary>
+        [TestMethod]
+        public void NullableType_ParamNotHasValue()
+        {
+            using (var context = new TestContext())
+            {
+                //  Same as E test but
+                var list = context.EntityFSet.ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -85,6 +110,8 @@ namespace DynamicFiltersTests
 
             public DateTime CreateTimestamp { get; set; }
             public DateTime? DeleteTimestamp { get; set; }
+
+            public int? TenantID { get; set; }
         }
 
         public class EntityA : EntityBase
@@ -99,6 +126,12 @@ namespace DynamicFiltersTests
         public class EntityD : EntityBase
         { }
 
+        public class EntityE : EntityBase
+        { }
+
+        public class EntityF : EntityBase
+        { }
+
         #endregion
 
         #region TestContext
@@ -109,6 +142,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityB> EntityBSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
             public DbSet<EntityD> EntityDSet { get; set; }
+            public DbSet<EntityE> EntityESet { get; set; }
+            public DbSet<EntityF> EntityFSet { get; set; }
 
             public TestContext()
                 : base("TestContext")
@@ -141,6 +176,10 @@ namespace DynamicFiltersTests
                 //  This filter also required special handling when cerating the filter to properly detect that this
                 //  is a property accessor (and thus a lambda/predicate filter) and not a column name filter.
                 modelBuilder.Filter("EntityDFilter", (EntityD d) => d.DeleteTimestamp.HasValue);
+
+                modelBuilder.Filter("EntityEFilter", (EntityE e, int? tenantID) => e.TenantID == tenantID, () => null);
+
+                modelBuilder.Filter("EntityFFilter", (EntityF f, int? tenantID) => (!f.TenantID.HasValue && !tenantID.HasValue) || (f.TenantID.HasValue && (f.TenantID == tenantID)), () => null);
             }
         }
 
@@ -160,6 +199,14 @@ namespace DynamicFiltersTests
 
                 context.EntityDSet.Add(new EntityD { ID = 1 });
                 context.EntityDSet.Add(new EntityD { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
+
+                context.EntityESet.Add(new EntityE { ID = 1, TenantID = 1 });
+                context.EntityESet.Add(new EntityE { ID = 2, TenantID = 2 });
+                context.EntityESet.Add(new EntityE { ID = 3, TenantID = null });
+
+                context.EntityFSet.Add(new EntityF { ID = 1, TenantID = 1 });
+                context.EntityFSet.Add(new EntityF { ID = 2, TenantID = 2 });
+                context.EntityFSet.Add(new EntityF { ID = 3, TenantID = null });
 
                 context.SaveChanges();
             }

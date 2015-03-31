@@ -188,61 +188,73 @@ namespace EntityFramework.DynamicFilters
         protected override Expression VisitMember(MemberExpression node)
         {
 #if (DEBUGPRINT)
-            System.Diagnostics.Debug.Print("VisitMember: {0}", node);
+            System.Diagnostics.Debug.Print("VisitMember: {0}, expression.NodeType={1}, Member={2}", node, node.Expression.NodeType, node.Member);
 #endif
 
             var expression = base.VisitMember(node) as MemberExpression;
 
-            var edmType = _Binding.VariableType.EdmType as EntityType;
-
-            string propertyName;
-            if (IsNullableType(expression.Member.ReflectedType))
+            if ((expression.Expression.NodeType == ExpressionType.Parameter) && (expression.Expression.Type.IsClass || expression.Expression.Type.IsInterface))
             {
-                var subExpression = expression.Expression as MemberExpression;
-                propertyName = subExpression.Member.Name;
-            }
-            else
-                propertyName = expression.Member.Name;
-
-
-            DbPropertyExpression propertyExpression;
-            if (!_Properties.TryGetValue(propertyName, out propertyExpression))
-            {
-                //  Not created yet
-
-                //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
-                //  It may be different from the entity property!
-                var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(propertyName))).FirstOrDefault();
-                if (edmProp == null)
+                //  expression is a reference to a class/interface property.  Need to map it to a sql parameter or look up
+                //  the existing parameter.
+                //  The class/interface is defined by expression.Expression while the property is in expression.Member.
+                string propertyName;
+                if (IsNullableType(expression.Member.ReflectedType))
                 {
-                    //  Accessing properties outside the main entity is not supported and will cause this exception.
-                    throw new ApplicationException(string.Format("Property {0} not found in Entity Type {1}", propertyName, expression.Expression.Type.Name));
+                    var subExpression = expression.Expression as MemberExpression;
+                    propertyName = subExpression.Member.Name;
                 }
-                //  database column name is now in edmProp.Name.  Use that instead of filter.ColumnName
+                else
+                    propertyName = expression.Member.Name;
 
-                propertyExpression = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(_Binding.VariableType, _Binding.VariableName), edmProp.Name);
-                _Properties.Add(propertyName, propertyExpression);
+                //  TODO: To support different class/interfaces, can we figure out the correct binding from what's in expression.Expression?
+                var edmType = _Binding.VariableType.EdmType as EntityType;
+
+                DbPropertyExpression propertyExpression;
+                if (!_Properties.TryGetValue(propertyName, out propertyExpression))
+                {
+                    //  Not created yet
+
+                    //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
+                    //  It may be different from the entity property!
+                    var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(propertyName))).FirstOrDefault();
+                    if (edmProp == null)
+                    {
+                        //  Accessing properties outside the main entity is not supported and will cause this exception.
+                        throw new ApplicationException(string.Format("Property {0} not found in Entity Type {1}", propertyName, expression.Expression.Type.Name));
+                    }
+                    //  database column name is now in edmProp.Name.  Use that instead of filter.ColumnName
+
+                    propertyExpression = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(_Binding.VariableType, _Binding.VariableName), edmProp.Name);
+                    _Properties.Add(propertyName, propertyExpression);
 
 #if (DEBUGPRINT)
-                System.Diagnostics.Debug.Print("Created new property expression for {0}", propertyName);
+                    System.Diagnostics.Debug.Print("Created new property expression for {0}", propertyName);
 #endif
+                }
+
+                //  Nothing else to do here
+                MapExpressionToDbExpression(expression, propertyExpression);
+                return expression;
             }
 
-            DbExpression dbExpression = propertyExpression;
+            //  We are accessing a member property such that expression.Expression is the object and expression.Member is the property.
+            //  And the property is one that requires special handling.  Regular class properties are all handled up above.
+            var objectExpression = GetDbExpressionForExpression(expression.Expression);
 
-            if ((expression.Member != null) && (propertyName != expression.Member.Name))
+            DbExpression dbExpression;
+            switch(expression.Member.Name)
             {
-                //  This is a property accessor
-                if (expression.Member.Name == "HasValue")
-                {
+                case "HasValue":
                     //  Map HasValue to !IsNull
-                    dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(propertyExpression));
-                }
-                else if (expression.Member.Name != "Value")
-                {
-                    //  Ignore Value - it's mapped for us, everything else is unsupported
+                    dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(objectExpression));
+                    break;
+                case "Value":
+                    //  This is a nullable Value accessor so just map to the object itself and it will be mapped for us
+                    dbExpression = objectExpression;
+                    break;
+                default:
                     throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
-                }
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
