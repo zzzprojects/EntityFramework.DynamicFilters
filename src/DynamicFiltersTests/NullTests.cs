@@ -69,16 +69,15 @@ namespace DynamicFiltersTests
             }
         }
 
-        //  This test currently fails
-        //[TestMethod]
-        //public void NullableType_NullIntEquals()
-        //{
-        //    using (var context = new TestContext())
-        //    {
-        //        var list = context.EntityESet.ToList();
-        //        Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
-        //    }
-        //}
+        [TestMethod]
+        public void NullableType_NullIntEquals()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityESet.ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
+            }
+        }
 
         /// <summary>
         /// Tests checking !param.HasValue
@@ -91,6 +90,26 @@ namespace DynamicFiltersTests
                 //  Same as E test but
                 var list = context.EntityFSet.ToList();
                 Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
+            }
+        }
+
+        [TestMethod]
+        public void NullableType_NullIntValueEquals()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityGSet.ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 2));
+            }
+        }
+
+        [TestMethod]
+        public void NullableType_NullIntCast()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityHSet.ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 1));
             }
         }
 
@@ -132,6 +151,12 @@ namespace DynamicFiltersTests
         public class EntityF : EntityBase
         { }
 
+        public class EntityG : EntityBase
+        { }
+
+        public class EntityH : EntityBase
+        { }
+
         #endregion
 
         #region TestContext
@@ -144,6 +169,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityD> EntityDSet { get; set; }
             public DbSet<EntityE> EntityESet { get; set; }
             public DbSet<EntityF> EntityFSet { get; set; }
+            public DbSet<EntityG> EntityGSet { get; set; }
+            public DbSet<EntityH> EntityHSet { get; set; }
 
             public TestContext()
                 : base("TestContext")
@@ -179,7 +206,14 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityEFilter", (EntityE e, int? tenantID) => e.TenantID == tenantID, () => null);
 
+                //  With the built-in handling of a filter like e.TenantID == tenantID (being translated into "is null"/"is not null"
+                //  checks), this will result in a crazy sql condition.  But it still works and tests special handling of the
+                //  .HasValue handling on a nullable property.
                 modelBuilder.Filter("EntityFFilter", (EntityF f, int? tenantID) => (!f.TenantID.HasValue && !tenantID.HasValue) || (f.TenantID.HasValue && (f.TenantID == tenantID)), () => null);
+
+                modelBuilder.Filter("EntityGFilter", (EntityG g, int? tenantID) => g.TenantID == tenantID.Value, () => 2);
+
+                modelBuilder.Filter("EntityHFilter", (EntityH h, int tenantID) => (int)h.TenantID == tenantID, () => 1);
             }
         }
 
@@ -207,6 +241,14 @@ namespace DynamicFiltersTests
                 context.EntityFSet.Add(new EntityF { ID = 1, TenantID = 1 });
                 context.EntityFSet.Add(new EntityF { ID = 2, TenantID = 2 });
                 context.EntityFSet.Add(new EntityF { ID = 3, TenantID = null });
+
+                context.EntityGSet.Add(new EntityG { ID = 1, TenantID = 1 });
+                context.EntityGSet.Add(new EntityG { ID = 2, TenantID = 2 });
+                context.EntityGSet.Add(new EntityG { ID = 3, TenantID = null });
+
+                context.EntityHSet.Add(new EntityH { ID = 1, TenantID = 1 });
+                context.EntityHSet.Add(new EntityH { ID = 2, TenantID = 2 });
+                context.EntityHSet.Add(new EntityH { ID = 3, TenantID = null });
 
                 context.SaveChanges();
             }

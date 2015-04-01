@@ -74,7 +74,14 @@ namespace EntityFramework.DynamicFilters
                 switch (expression.NodeType)
                 {
                     case ExpressionType.Equal:
-                        dbExpression = DbExpressionBuilder.Equal(leftExpression, rightExpression);
+                        //  DbPropertyExpression = class property that has been mapped to a database column
+                        //  DbParameterReferenceExpression = lambda parameter
+                        if (IsNullableExpressionOfType<DbPropertyExpression>(leftExpression) && IsNullableExpressionOfType<DbParameterReferenceExpression>(rightExpression))
+                            dbExpression = CreateEqualComparisonOfNullablePropToNullableParam(leftExpression, rightExpression);
+                        else if (IsNullableExpressionOfType<DbPropertyExpression>(rightExpression) && IsNullableExpressionOfType<DbParameterReferenceExpression>(leftExpression))
+                            dbExpression = CreateEqualComparisonOfNullablePropToNullableParam(rightExpression, leftExpression);
+                        else
+                            dbExpression = DbExpressionBuilder.Equal(leftExpression, rightExpression);
                         break;
                     case ExpressionType.NotEqual:
                         dbExpression = DbExpressionBuilder.NotEqual(leftExpression, rightExpression);
@@ -107,6 +114,23 @@ namespace EntityFramework.DynamicFilters
             MapExpressionToDbExpression(expression, dbExpression);
 
             return expression;
+        }
+
+        /// <summary>
+        /// Creates an Equal comparison of a nullable property (db column) to a nullable parameter (lambda param)
+        /// that adds the necessary "is null" checks to support a filter like "e.TenantId = tenantId".
+        /// Results in sql: (e.TenantID is null and @tenantID is null) or (e.TenantID is not null and e.TenantID = @tenantID)
+        /// which will support parmeter values that are "null" or a specific value and will correctly filter on columns that
+        /// are "null" or a specific value.
+        /// </summary>
+        /// <param name="propExpression"></param>
+        /// <param name="paramExpression"></param>
+        /// <returns></returns>
+        private DbExpression CreateEqualComparisonOfNullablePropToNullableParam(DbExpression propExpression, DbExpression paramExpression)
+        {
+            var condition1 = propExpression.IsNull().And(paramExpression.IsNull());
+            var condition2 = propExpression.IsNull().Not().And(propExpression.Equal(paramExpression));
+            return condition1.Or(condition2);
         }
 
         /// <summary>
@@ -580,6 +604,24 @@ namespace EntityFramework.DynamicFilters
             }
 
             return type;
+        }
+
+        /// <summary>
+        /// Returns true if the expression is a DbPropertyExpression (i.e. a class property that has been mapped
+        /// to a database column) and the type is a Nullable type.
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private static bool IsNullableExpressionOfType<T>(DbExpression expression)
+            where T : DbExpression
+        {
+            if (expression == null)
+                return false;
+
+            if (!typeof(T).IsAssignableFrom(expression.GetType()))
+                return false;
+
+            return expression.ResultType.Facets.Any(f => f.Name == "Nullable" && ((bool)f.Value));
         }
 
         private static bool IsNullableType(Type type)
