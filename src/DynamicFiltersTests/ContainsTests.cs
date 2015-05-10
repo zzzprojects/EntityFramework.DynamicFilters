@@ -115,6 +115,22 @@ namespace DynamicFiltersTests
             }
         }
 
+        /// <summary>
+        /// Tests issue #31.  Multiple entities being filtered on the same Contains() filter in the same query.
+        /// </summary>
+        [TestMethod]
+        public void Contains_MultipleEntities()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.TenantEntityASet.Include(e => e.EntityBList).ToList();
+                Assert.IsTrue((list.Count == 1) && (list.All(e => e.ID == 1)));
+
+                var entityBList = list.FirstOrDefault().EntityBList;
+                Assert.IsTrue((entityBList.Count == 3) && (list.All(b => (b.ID == 1) || (b.ID == 2) || (b.ID == 3))));
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -211,6 +227,35 @@ namespace DynamicFiltersTests
             public DateTime DateValue { get; set; }
         }
 
+        public interface ITenant
+        {
+            Guid TenantID { get; set; }
+        }
+
+        public class TenantEntityA : ITenant
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            public int ID { get; set; }
+
+            public Guid TenantID { get; set; }
+
+            public ICollection<TenantEntityB> EntityBList { get; set; }
+        }
+
+        public class TenantEntityB : ITenant
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            public int ID { get; set; }
+
+            public Guid TenantID { get; set; }
+
+            public TenantEntityA EntityA { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -227,6 +272,11 @@ namespace DynamicFiltersTests
             public DbSet<EntityH> EntityHSet { get; set; }
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
+            public DbSet<TenantEntityA> TenantEntityASet { get; set; }
+            public DbSet<TenantEntityB> TenantEntityBSet { get; set; }
+
+            public static Guid TenantID1 = Guid.NewGuid();
+            public static Guid TenantID2 = Guid.NewGuid();
 
             public TestContext()
                 : base("TestContext")
@@ -267,6 +317,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityIFilter", (EntityI i, List<Guid> valueList) => valueList.Contains(i.GuidValue), () => new List<Guid> { Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF"), Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") });
 
                 modelBuilder.Filter("EntityJFilter", (EntityJ j, List<DateTime> valueList) => valueList.Contains(j.DateValue), () => new List<DateTime> { new DateTime(2015, 1, 1), new DateTime(2015, 1, 2, 12, 34, 56, 790), new DateTime(2015, 1, 3) });
+
+                modelBuilder.Filter("TentantEntityFilter", (ITenant t, List<Guid> tenantIDList) => tenantIDList.Contains(t.TenantID), () => new List<Guid> { TestContext.TenantID1, TestContext.TenantID2 });
             }
         }
 
@@ -304,6 +356,36 @@ namespace DynamicFiltersTests
                 context.EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 3) });
                 context.EntityJSet.Add(new EntityJ { DateValue = DateTime.Now });
                 context.EntityJSet.Add(new EntityJ { DateValue = DateTime.Now.AddDays(7) });
+
+                var tenantID2 = Guid.NewGuid();
+                context.TenantEntityASet.Add(new TenantEntityA
+                {
+                    ID = 1,
+                    TenantID = TestContext.TenantID1,
+                    EntityBList = new List<TenantEntityB>()
+                    {
+                        new TenantEntityB { ID = 1, TenantID = TestContext.TenantID1 },
+                        new TenantEntityB { ID = 2, TenantID = TestContext.TenantID1 },
+                        new TenantEntityB { ID = 3, TenantID = TestContext.TenantID2 },
+                        new TenantEntityB { ID = 4, TenantID = tenantID2 },
+                        new TenantEntityB { ID = 5, TenantID = tenantID2 },
+                        new TenantEntityB { ID = 6, TenantID = tenantID2 }
+                    }
+                });
+                context.TenantEntityASet.Add(new TenantEntityA
+                {
+                    ID = 2,
+                    TenantID = tenantID2,
+                    EntityBList = new List<TenantEntityB>()
+                    {
+                        new TenantEntityB { ID = 10, TenantID = TestContext.TenantID1 },
+                        new TenantEntityB { ID = 11, TenantID = TestContext.TenantID2 },
+                        new TenantEntityB { ID = 12, TenantID = TestContext.TenantID2 },
+                        new TenantEntityB { ID = 13, TenantID = tenantID2 },
+                        new TenantEntityB { ID = 14, TenantID = tenantID2 },
+                        new TenantEntityB { ID = 15, TenantID = tenantID2 }
+                    }
+                });
 
                 context.SaveChanges();
             }

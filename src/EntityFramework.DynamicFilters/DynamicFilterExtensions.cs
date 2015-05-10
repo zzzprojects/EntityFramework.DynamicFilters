@@ -588,43 +588,49 @@ namespace EntityFramework.DynamicFilters
         /// <param name="command"></param>
         private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command)
         {
-            int paramStartIdx = command.CommandText.IndexOf(param.ParameterName);
-            int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
-
-            var inCondition = new StringBuilder();
-            inCondition.Append("in (@");
-            inCondition.Append(param.ParameterName);
-
-            bool isFirst = true;
-            foreach (var singleValue in paramValueCollection)
+            int prevStartIndex = 0;
+            int paramStartIdx;
+            while ((paramStartIdx = command.CommandText.IndexOf(param.ParameterName, prevStartIndex)) != -1)
             {
-                object value = singleValue;
-                if (singleValue != null)
+                int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
+
+                var inCondition = new StringBuilder();
+                inCondition.Append("in (@");
+                inCondition.Append(param.ParameterName);
+
+                bool isFirst = true;
+                foreach (var singleValue in paramValueCollection)
                 {
-                    //  If this is an Enum, need to cast it to an int
-                    if (singleValue.GetType().IsEnum)
-                        value = (int)singleValue;
+                    object value = singleValue;
+                    if (singleValue != null)
+                    {
+                        //  If this is an Enum, need to cast it to an int
+                        if (singleValue.GetType().IsEnum)
+                            value = (int)singleValue;
+                    }
+
+                    if (isFirst)
+                    {
+                        //  The first item in the list is set as the value of the sql parameter
+                        param.Value = value;
+                    }
+                    else
+                    {
+                        //  Remaining valus must be inserted directly into the sql 'in' clause
+                        inCondition.AppendFormat(", {0}", QuotedValue(param, value));
+                    }
+
+                    isFirst = false;
                 }
 
-                if (isFirst)
-                {
-                    //  The first item in the list is set as the value of the sql parameter
-                    param.Value = value;
-                }
-                else
-                {
-                    //  Remaining valus must be inserted directly into the sql 'in' clause
-                    inCondition.AppendFormat(", {0}", QuotedValue(param, value));
-                }
+                inCondition.Append(")");
 
-                isFirst = false;
+                command.CommandText = string.Concat(command.CommandText.Substring(0, startIdx),
+                                                    inCondition,
+                                                    command.CommandText.Substring(paramStartIdx + param.ParameterName.Length));
+
+                prevStartIndex = paramStartIdx + param.ParameterName.Length;
             }
-
-            inCondition.Append(")");
-
-            command.CommandText = string.Concat(command.CommandText.Substring(0, startIdx),
-                                                inCondition,
-                                                command.CommandText.Substring(paramStartIdx + param.ParameterName.Length));
         }
 
         private static string QuotedValue(DbParameter param, object value)
