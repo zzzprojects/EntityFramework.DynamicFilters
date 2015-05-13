@@ -75,6 +75,7 @@
     <Compile Include="NameTests.cs" />
     <Compile Include="NullTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TPTTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EntityFramework.DynamicFilters\EntityFramework.DynamicFilters.csproj">
