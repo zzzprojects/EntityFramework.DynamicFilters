@@ -49,6 +49,17 @@ namespace EntityFramework.DynamicFilters
             DbInterception.Add(new DynamicFilterInterceptor());
         }
 
+        /// <summary>
+        /// Resets all of DynamicFilters internal static lookups.  Only intended to be used in unit tests where multiple
+        /// DbContexts are being used and we need to make sure everything is reset to an initial state.
+        /// </summary>
+        /// <param name="modelBuilder"></param>
+        public static void ResetDynamicFilters(this DbModelBuilder modelBuilder)
+        {
+            _GlobalParameterValues = new ConcurrentDictionary<string, DynamicFilterParameters>();
+            _ScopedParameterValues = new ConcurrentDictionary<DbContext, ConcurrentDictionary<string, DynamicFilterParameters>>();
+        }
+
         #endregion
 
         #region Add Filters
@@ -244,6 +255,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="filterName"></param>
         public static void EnableFilter(this DbContext context, string filterName)
         {
+            context.Database.Initialize(false);
+
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
             filterParams.Enabled = true;
         }
@@ -254,6 +267,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="context"></param>
         public static void EnableAllFilters(this DbContext context)
         {
+            context.Database.Initialize(false);
+
             foreach (var filterName in _GlobalParameterValues.Keys.ToList())
                 EnableFilter(context, filterName);
         }
@@ -265,6 +280,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="filterName"></param>
         public static void DisableFilter(this DbContext context, string filterName)
         {
+            context.Database.Initialize(false);
+
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
             filterParams.Enabled = false;
         }
@@ -275,6 +292,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="context"></param>
         public static void DisableAllFilters(this DbContext context)
         {
+            context.Database.Initialize(false);
+
             foreach(var filterName in _GlobalParameterValues.Keys.ToList())
                 DisableFilter(context, filterName);
         }
@@ -356,6 +375,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="value"></param>
         public static void SetFilterScopedParameterValue(this DbContext context, string filterName, string parameterName, object value)
         {
+            context.Database.Initialize(false);
+
             filterName = ScrubFilterName(filterName);
 
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
@@ -406,6 +427,10 @@ namespace EntityFramework.DynamicFilters
 
         public static void SetFilterGlobalParameterValue(this DbContext context, string filterName, string parameterName, object value)
         {
+            //  This is null when called during filter creation in OnModelCreating
+            if (context != null)
+                context.Database.Initialize(false);
+
             filterName = ScrubFilterName(filterName);
 
             if (string.IsNullOrEmpty(parameterName))
@@ -442,6 +467,8 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         public static object GetFilterParameterValue(this DbContext context, string filterName, string parameterName)
         {
+            context.Database.Initialize(false);
+
             //  First check to see if this the Disabled parameter.
             if (parameterName == DynamicFilterConstants.FILTER_DISABLED_NAME)
                 return context.IsFilterEnabled(filterName) ? null : (object)true;
@@ -489,6 +516,8 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         public static bool IsFilterEnabled(this DbContext context, string filterName)
         {
+            context.Database.Initialize(false);
+
             filterName = ScrubFilterName(filterName);
 
             ConcurrentDictionary<string, DynamicFilterParameters> contextFilters;
