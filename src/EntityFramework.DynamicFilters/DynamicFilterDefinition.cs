@@ -19,9 +19,9 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         public LambdaExpression Predicate { get; private set; }
 
-        private Type _CLRType;
+        public Type CLRType { get; private set; }
 
-        public string AttributeName { get { return string.Concat(DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX, DynamicFilterConstants.DELIMETER, _CLRType.Name, DynamicFilterConstants.DELIMETER, FilterName); } }
+        public string AttributeName { get { return string.Concat(DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX, DynamicFilterConstants.DELIMETER, CLRType.Name, DynamicFilterConstants.DELIMETER, FilterName); } }
         public string CreateDynamicFilterName(string parameterName)
         {
             return string.Concat(DynamicFilterConstants.PARAMETER_NAME_PREFIX, DynamicFilterConstants.DELIMETER, FilterName, DynamicFilterConstants.DELIMETER, parameterName);
@@ -37,7 +37,7 @@ namespace EntityFramework.DynamicFilters
             FilterName = filterName;
             Predicate = predicate;
             ColumnName = columnName;
-            _CLRType = clrType;
+            CLRType = clrType;
         }
     }
 }

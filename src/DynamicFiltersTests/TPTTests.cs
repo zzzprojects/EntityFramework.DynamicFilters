@@ -45,6 +45,16 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void TPT_Residents()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.Residents.ToList();
+                Assert.IsTrue((list.Count == 1) && list.All(a => (a.Id == 1)));
+            }
+        }
+
         #region Models
 
         public interface IEntity
@@ -74,6 +84,56 @@ namespace DynamicFiltersTests
             public DateTime EnrollmentDate { get; set; }
         }
 
+        public class BaseModel
+        {
+            public DateTime? Created { get; set; }
+
+            [MaxLength(32)]
+            public String CreatedBy { get; set; }
+
+            public DateTime? Updated { get; set; }
+
+            [MaxLength(32)]
+            public String UpdatedBy { get; set; }
+
+            [Index]
+            public DateTime? Deleted { get; set; }
+        }
+
+        [Table("People2")]
+        public class Person2 : BaseModel
+        {
+            public int Id { get; set; }
+
+            [Required, Display(Name = "First Name"), MaxLength(32)]
+            public string FirstName { get; set; }
+
+            [Display(Name = "Middle Name"), MaxLength(64)]
+            public string MiddleName { get; set; }
+
+            [Required, Display(Name = "Last Name"), MaxLength(32)]
+            public string LastName { get; set; }
+        }
+
+        [Table("Residents")]
+        public class Resident : Person2
+        {
+            [Required, MaxLength(4)]
+            public string Title { get; set; }
+
+            [MaxLength(32), Display(Name = "Maiden Name")]
+            public string MaidenName { get; set; }
+
+            [MaxLength(32), Display(Name = "Famailiar Name")]
+            public string FamiliarName { get; set; }
+
+            [Required, MaxLength(1)]
+            public string Gender { get; set; } // M or F
+
+            [Display(Name = "Date of Birth"), DataType(DataType.Date)]
+            public DateTime? DateOfBirth { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -84,21 +144,24 @@ namespace DynamicFiltersTests
             public DbSet<Instructor> Instructors { get; set; }
             public DbSet<Student> Students { get; set; }
 
+            public DbSet<Person2> People2 { get; set; }
+            public DbSet<Resident> Residents { get; set; }
+
             public TestContext()
                 : base("TestContext")
             {
                 Database.SetInitializer(new ContentInitializer<TestContext>());
                 Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
                 Database.Initialize(false);
-
-                this.EnableAllFilters();
             }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
                 base.OnModelCreating(modelBuilder);
 
-                modelBuilder.Filter("IsDeleted", (IEntity e) => e.IsDeleted, false);
+                modelBuilder.Filter("IsDeleted", (IEntity e) => e.IsDeleted == false);
+
+                modelBuilder.Filter("SoftDelete", (BaseModel x) => x.Deleted == null);
             }
         }
 
@@ -116,6 +179,9 @@ namespace DynamicFiltersTests
                 context.Instructors.Add(new Instructor { ID = 10, IsDeleted = true, HireDate = new DateTime(2015, 2, 1) });
                 context.Instructors.Add(new Instructor { ID = 11, IsDeleted = false, HireDate = new DateTime(2015, 2, 2) });
                 context.Instructors.Add(new Instructor { ID = 12, IsDeleted = false, HireDate = new DateTime(2015, 2, 3) });
+
+                context.Residents.Add(new Resident { Created=new DateTime(2015, 1, 1), CreatedBy="me", Id=1, FirstName="Fred", LastName="Flintstone", Title="Mr", FamiliarName="Fred", Gender="M" });
+                context.Residents.Add(new Resident { Created=new DateTime(2015, 2, 1), CreatedBy="me", Deleted=new DateTime(2015, 2, 3), Id=2, FirstName="Barney", LastName="Rubble", Title="Mr", FamiliarName="Barney", Gender="M" });
 
                 context.SaveChanges();
             }

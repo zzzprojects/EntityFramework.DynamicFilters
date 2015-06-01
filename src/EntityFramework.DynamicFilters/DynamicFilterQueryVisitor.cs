@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Core.Common.CommandTrees;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
@@ -30,9 +31,8 @@ namespace EntityFramework.DynamicFilters
             //  creating a new sub-query in MS SQL Server.
 
             string entityName = expression.Input.Variable.ResultType.EdmType.Name;
-            var filterList = expression.Input.Variable.ResultType.EdmType.MetadataProperties
-                                .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
-                                .Select(m => m.Value as DynamicFilterDefinition);
+            var containers = _ObjectContext.MetadataWorkspace.GetItems<EntityContainer>(DataSpace.SSpace).First();
+            var filterList = FindFiltersForEntitySet(expression.Input.Variable.ResultType.EdmType.MetadataProperties, containers);
 
             var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, expression.Input, expression.Predicate);
             if (newFilterExpression != null)
@@ -51,9 +51,7 @@ namespace EntityFramework.DynamicFilters
             //  Otherwise, we do that here.
 
             string entityName = expression.Target.Name;
-            var filterList = expression.Target.ElementType.MetadataProperties
-                .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
-                .Select(m => m.Value as DynamicFilterDefinition);
+            var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties, expression.Target.EntityContainer);
 
             var baseResult = base.Visit(expression);
             if (filterList.Any())
@@ -68,6 +66,59 @@ namespace EntityFramework.DynamicFilters
             }
 
             return baseResult;
+        }
+
+        private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties, EntityContainer entityContainer)
+        {
+            var filterList = metadataProperties
+                .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
+                .Select(m => m.Value as DynamicFilterDefinition)
+                .ToList();
+
+            if (filterList.Any())
+            {
+                //  Recursively remove any filters that exist in base EntitySets to this entity.
+                //  This happens when an entity uses Table-per-Type inheritance.  Filters will be added
+                //  to all derived EntitySets because of the inheritance in the C# classes.  But the database
+                //  representation (the EntitySet) does not give access to inherited propeties since they
+                //  only exist in the child EntitySet.  And on queries of entities involved in TPT, the
+                //  query will generate a DbScanExpression for each EntitySet - so we only want the filters
+                //  applied to the DbScanExpression to which they apply.
+                //  See issue #32.
+                RemoveFiltersForBaseClass(filterList.First().CLRType, filterList, entityContainer);
+            }
+
+            return filterList;
+        }
+
+        private void RemoveFiltersForBaseClass(Type clrType, List<DynamicFilterDefinition> filterList, EntityContainer entityContainer)
+        {
+            if (!filterList.Any())
+                return;
+
+            //  Find the base class (if there is one) for clrType
+            var baseCLRType = clrType.BaseType;
+            if (baseCLRType.FullName == "System.Object")
+                return;     //  No base
+            
+            //  Find the EntitySet for the base type (if there is one)
+            var baseEntitySet = entityContainer.EntitySets
+                .Where(e => e.ElementType.MetadataProperties.Any(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX)
+                                                                        && (((DynamicFilterDefinition)mp.Value).CLRType == baseCLRType)))
+                .FirstOrDefault();
+            if (baseEntitySet == null)
+                return;     //  Base class does not have an EntitySet or it does not contain a filter - so not using TPT/nothing to do
+
+            //  baseCLRType has an EntitySet that has filters on it.  This means the entities are using Table-per-Type inheritance.
+            //  We need to remove filters from filterList that also exist in the baseEntitySet.  If we tried to process the
+            //  fiter on the super class, it would fail since it doesn't have the properties (database columns) in it.
+            var baseFilterNameList = new HashSet<string>(baseEntitySet.ElementType.MetadataProperties
+                .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
+                .Select(m => ((DynamicFilterDefinition)m.Value).FilterName));
+            filterList.RemoveAll(f => baseFilterNameList.Contains(f.FilterName));
+
+            //  Check base classes of baseCLRType
+            RemoveFiltersForBaseClass(baseCLRType, filterList, entityContainer);
         }
 
         private DbFilterExpression BuildFilterExpressionWithDynamicFilters(string entityName, IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
