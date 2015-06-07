@@ -161,7 +161,7 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
@@ -171,14 +171,6 @@ namespace DynamicFiltersTests
             public DbSet<EntityF> EntityFSet { get; set; }
             public DbSet<EntityG> EntityGSet { get; set; }
             public DbSet<EntityH> EntityHSet { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -215,42 +207,38 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityHFilter", (EntityH h, int tenantID) => (int)h.TenantID == tenantID, () => 1);
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
-                context.EntityASet.Add(new EntityA { ID = 1 });
-                context.EntityASet.Add(new EntityA { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
+                EntityASet.Add(new EntityA { ID = 1 });
+                EntityASet.Add(new EntityA { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
 
-                context.EntityBSet.Add(new EntityB { ID = 1 });
-                context.EntityBSet.Add(new EntityB { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
+                EntityBSet.Add(new EntityB { ID = 1 });
+                EntityBSet.Add(new EntityB { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
 
-                context.EntityCSet.Add(new EntityC { ID = 1 });
-                context.EntityCSet.Add(new EntityC { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
+                EntityCSet.Add(new EntityC { ID = 1 });
+                EntityCSet.Add(new EntityC { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
 
-                context.EntityDSet.Add(new EntityD { ID = 1 });
-                context.EntityDSet.Add(new EntityD { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
+                EntityDSet.Add(new EntityD { ID = 1 });
+                EntityDSet.Add(new EntityD { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
 
-                context.EntityESet.Add(new EntityE { ID = 1, TenantID = 1 });
-                context.EntityESet.Add(new EntityE { ID = 2, TenantID = 2 });
-                context.EntityESet.Add(new EntityE { ID = 3, TenantID = null });
+                EntityESet.Add(new EntityE { ID = 1, TenantID = 1 });
+                EntityESet.Add(new EntityE { ID = 2, TenantID = 2 });
+                EntityESet.Add(new EntityE { ID = 3, TenantID = null });
 
-                context.EntityFSet.Add(new EntityF { ID = 1, TenantID = 1 });
-                context.EntityFSet.Add(new EntityF { ID = 2, TenantID = 2 });
-                context.EntityFSet.Add(new EntityF { ID = 3, TenantID = null });
+                EntityFSet.Add(new EntityF { ID = 1, TenantID = 1 });
+                EntityFSet.Add(new EntityF { ID = 2, TenantID = 2 });
+                EntityFSet.Add(new EntityF { ID = 3, TenantID = null });
 
-                context.EntityGSet.Add(new EntityG { ID = 1, TenantID = 1 });
-                context.EntityGSet.Add(new EntityG { ID = 2, TenantID = 2 });
-                context.EntityGSet.Add(new EntityG { ID = 3, TenantID = null });
+                EntityGSet.Add(new EntityG { ID = 1, TenantID = 1 });
+                EntityGSet.Add(new EntityG { ID = 2, TenantID = 2 });
+                EntityGSet.Add(new EntityG { ID = 3, TenantID = null });
 
-                context.EntityHSet.Add(new EntityH { ID = 1, TenantID = 1 });
-                context.EntityHSet.Add(new EntityH { ID = 2, TenantID = 2 });
-                context.EntityHSet.Add(new EntityH { ID = 3, TenantID = null });
+                EntityHSet.Add(new EntityH { ID = 1, TenantID = 1 });
+                EntityHSet.Add(new EntityH { ID = 2, TenantID = 2 });
+                EntityHSet.Add(new EntityH { ID = 3, TenantID = null });
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

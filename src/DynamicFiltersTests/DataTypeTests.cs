@@ -78,19 +78,11 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -102,31 +94,27 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityCFilter", (EntityC c) => (new List<StatusEnum> { StatusEnum.Inactive, StatusEnum.Deleted }).Contains(c.Status));
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
-                context.EntityASet.Add(new EntityA { ID = 1, Status = StatusEnum.Active });
-                context.EntityASet.Add(new EntityA { ID = 2, Status = StatusEnum.Inactive });
-                context.EntityASet.Add(new EntityA { ID = 3, Status = StatusEnum.Deleted });
-                context.EntityASet.Add(new EntityA { ID = 4, Status = StatusEnum.Archived });
+                EntityASet.Add(new EntityA { ID = 1, Status = StatusEnum.Active });
+                EntityASet.Add(new EntityA { ID = 2, Status = StatusEnum.Inactive });
+                EntityASet.Add(new EntityA { ID = 3, Status = StatusEnum.Deleted });
+                EntityASet.Add(new EntityA { ID = 4, Status = StatusEnum.Archived });
 
-                context.EntityBSet.Add(new EntityB { ID = 1, Status = StatusEnum.Active });
-                context.EntityBSet.Add(new EntityB { ID = 2, Status = StatusEnum.Inactive });
-                context.EntityBSet.Add(new EntityB { ID = 3, Status = StatusEnum.Deleted });
-                context.EntityBSet.Add(new EntityB { ID = 4, Status = StatusEnum.Archived });
+                EntityBSet.Add(new EntityB { ID = 1, Status = StatusEnum.Active });
+                EntityBSet.Add(new EntityB { ID = 2, Status = StatusEnum.Inactive });
+                EntityBSet.Add(new EntityB { ID = 3, Status = StatusEnum.Deleted });
+                EntityBSet.Add(new EntityB { ID = 4, Status = StatusEnum.Archived });
 
-                context.EntityCSet.Add(new EntityC { ID = 1, Status = StatusEnum.Active });
-                context.EntityCSet.Add(new EntityC { ID = 2, Status = StatusEnum.Inactive });
-                context.EntityCSet.Add(new EntityC { ID = 3, Status = StatusEnum.Deleted });
-                context.EntityCSet.Add(new EntityC { ID = 4, Status = StatusEnum.Archived });
+                EntityCSet.Add(new EntityC { ID = 1, Status = StatusEnum.Active });
+                EntityCSet.Add(new EntityC { ID = 2, Status = StatusEnum.Inactive });
+                EntityCSet.Add(new EntityC { ID = 3, Status = StatusEnum.Deleted });
+                EntityCSet.Add(new EntityC { ID = 4, Status = StatusEnum.Archived });
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

@@ -138,7 +138,7 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<Person> People { get; set; }
             public DbSet<Instructor> Instructors { get; set; }
@@ -146,14 +146,6 @@ namespace DynamicFiltersTests
 
             public DbSet<Person2> People2 { get; set; }
             public DbSet<Resident> Residents { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -163,27 +155,23 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("SoftDelete", (BaseModel x) => x.Deleted == null);
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
-                context.Students.Add(new Student { ID = 1, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 1) });
-                context.Students.Add(new Student { ID = 2, IsDeleted = true, EnrollmentDate = new DateTime(2015, 1, 2) });
-                context.Students.Add(new Student { ID = 3, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 3) });
+                Students.Add(new Student { ID = 1, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 1) });
+                Students.Add(new Student { ID = 2, IsDeleted = true, EnrollmentDate = new DateTime(2015, 1, 2) });
+                Students.Add(new Student { ID = 3, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 3) });
 
-                context.Instructors.Add(new Instructor { ID = 10, IsDeleted = true, HireDate = new DateTime(2015, 2, 1) });
-                context.Instructors.Add(new Instructor { ID = 11, IsDeleted = false, HireDate = new DateTime(2015, 2, 2) });
-                context.Instructors.Add(new Instructor { ID = 12, IsDeleted = false, HireDate = new DateTime(2015, 2, 3) });
+                Instructors.Add(new Instructor { ID = 10, IsDeleted = true, HireDate = new DateTime(2015, 2, 1) });
+                Instructors.Add(new Instructor { ID = 11, IsDeleted = false, HireDate = new DateTime(2015, 2, 2) });
+                Instructors.Add(new Instructor { ID = 12, IsDeleted = false, HireDate = new DateTime(2015, 2, 3) });
 
-                context.Residents.Add(new Resident { Created=new DateTime(2015, 1, 1), CreatedBy="me", Id=1, FirstName="Fred", LastName="Flintstone", Title="Mr", FamiliarName="Fred", Gender="M" });
-                context.Residents.Add(new Resident { Created=new DateTime(2015, 2, 1), CreatedBy="me", Deleted=new DateTime(2015, 2, 3), Id=2, FirstName="Barney", LastName="Rubble", Title="Mr", FamiliarName="Barney", Gender="M" });
+                Residents.Add(new Resident { Created=new DateTime(2015, 1, 1), CreatedBy="me", Id=1, FirstName="Fred", LastName="Flintstone", Title="Mr", FamiliarName="Fred", Gender="M" });
+                Residents.Add(new Resident { Created=new DateTime(2015, 2, 1), CreatedBy="me", Deleted=new DateTime(2015, 2, 3), Id=2, FirstName="Barney", LastName="Rubble", Title="Mr", FamiliarName="Barney", Gender="M" });
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

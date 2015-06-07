@@ -74,20 +74,12 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
             public DbSet<EntityD> EntityDSet { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -98,12 +90,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityCFilter", (EntityC c) => "Joeseph".StartsWith(c.Name));
                 modelBuilder.Filter("EntityDFilter", (EntityD d, string val) => val.StartsWith(d.Name), () => "Frederick");
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
@@ -111,13 +99,13 @@ namespace DynamicFiltersTests
 
                 for (int i = 0; i < 5; i++)
                 {
-                    context.EntityASet.Add(new EntityA { ID = i + 1, Name = names[i] });
-                    context.EntityBSet.Add(new EntityB { ID = i + 1, Name = names[i] });
-                    context.EntityCSet.Add(new EntityC { ID = i + 1, Name = names[i] });
-                    context.EntityDSet.Add(new EntityD { ID = i + 1, Name = names[i] });
+                    EntityASet.Add(new EntityA { ID = i + 1, Name = names[i] });
+                    EntityBSet.Add(new EntityB { ID = i + 1, Name = names[i] });
+                    EntityCSet.Add(new EntityC { ID = i + 1, Name = names[i] });
+                    EntityDSet.Add(new EntityD { ID = i + 1, Name = names[i] });
                 }
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

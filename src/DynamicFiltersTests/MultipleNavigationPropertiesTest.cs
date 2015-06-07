@@ -80,18 +80,10 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -100,22 +92,18 @@ namespace DynamicFiltersTests
                 //  Multiple navigation property filter
                 modelBuilder.Filter("IsDeleted", (IEntitySoftDelete d) => d.IsDeleted, false);
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
                 var a3 = new EntityA { Id = 3, IsDeleted = true, Nav1 = new EntityB { Id = 30, IsDeleted = false }, Nav2 = new EntityB { Id = 31, IsDeleted = true } };
                 var a1 = new EntityA { Id = 1, IsDeleted = false, Nav1 = new EntityB { Id = 10, IsDeleted = false }, Nav2 = new EntityB { Id = 11, IsDeleted = true }, Nav3 = a3 };
                 var a2 = new EntityA { Id = 2, IsDeleted = false, Nav1 = new EntityB { Id = 20, IsDeleted = false }, Nav2 = new EntityB { Id = 21, IsDeleted = true }, Nav3 = a1 };
-                context.EntityASet.Add(a1);
-                context.EntityASet.Add(a2);
-                context.EntityASet.Add(a3);
-                context.SaveChanges();
+                EntityASet.Add(a1);
+                EntityASet.Add(a2);
+                EntityASet.Add(a3);
+                SaveChanges();
             }
         }
 

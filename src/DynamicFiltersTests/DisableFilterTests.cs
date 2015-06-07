@@ -122,19 +122,11 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -149,26 +141,24 @@ namespace DynamicFiltersTests
                 //  No parmeter filter (issue #22)
                 modelBuilder.Filter("EntityCFilter", (EntityC c) => c.ID < 5);
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
                 for (int i = 1; i <= 10; i++)
                 {
-                    context.EntityASet.Add(new EntityA { ID = i });
-                    context.EntityBSet.Add(new EntityB { ID = i });
-                    context.EntityCSet.Add(new EntityC { ID = i });
+                    EntityASet.Add(new EntityA { ID = i });
+                    EntityBSet.Add(new EntityB { ID = i });
+                    EntityCSet.Add(new EntityC { ID = i });
                 }
 
-                context.SaveChanges();
+                SaveChanges();
             }
+
         }
 
         #endregion
     }
+
 }

@@ -260,7 +260,7 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
@@ -277,14 +277,6 @@ namespace DynamicFiltersTests
 
             public static Guid TenantID1 = Guid.NewGuid();
             public static Guid TenantID2 = Guid.NewGuid();
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -320,45 +312,41 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("TentantEntityFilter", (ITenant t, List<Guid> tenantIDList) => tenantIDList.Contains(t.TenantID), () => new List<Guid> { TestContext.TenantID1, TestContext.TenantID2 });
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
                 for (int i = 1; i <= 10; i++)
                 {
-                    context.EntityASet.Add(new EntityA { ID = i });
-                    context.EntityBSet.Add(new EntityB { ID = i });
-                    context.EntityCSet.Add(new EntityC { ID = i });
-                    context.EntityDSet.Add(new EntityD { IntValue = i });
-                    context.EntityESet.Add(new EntityE { IntValue = i });
-                    context.EntityFSet.Add(new EntityF { IntValue = i });
-                    context.EntityGSet.Add(new EntityG { StrValue = i.ToString() });
+                    EntityASet.Add(new EntityA { ID = i });
+                    EntityBSet.Add(new EntityB { ID = i });
+                    EntityCSet.Add(new EntityC { ID = i });
+                    EntityDSet.Add(new EntityD { IntValue = i });
+                    EntityESet.Add(new EntityE { IntValue = i });
+                    EntityFSet.Add(new EntityF { IntValue = i });
+                    EntityGSet.Add(new EntityG { StrValue = i.ToString() });
                 }
 
                 //  Note: SQL Server does not return records using "in (null)" syntax...
-                context.EntityESet.Add(new EntityE());      //  For a null IntValue record
+                EntityESet.Add(new EntityE());      //  For a null IntValue record
 
-                context.EntityHSet.Add(new EntityH { BoolValue = true });
-                context.EntityHSet.Add(new EntityH { BoolValue = false });
+                EntityHSet.Add(new EntityH { BoolValue = true });
+                EntityHSet.Add(new EntityH { BoolValue = false });
 
-                context.EntityISet.Add(new EntityI { GuidValue = Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF") });
-                context.EntityISet.Add(new EntityI { GuidValue = Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") });
-                context.EntityISet.Add(new EntityI { GuidValue = Guid.NewGuid() });
-                context.EntityISet.Add(new EntityI { GuidValue = Guid.NewGuid() });
+                EntityISet.Add(new EntityI { GuidValue = Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF") });
+                EntityISet.Add(new EntityI { GuidValue = Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") });
+                EntityISet.Add(new EntityI { GuidValue = Guid.NewGuid() });
+                EntityISet.Add(new EntityI { GuidValue = Guid.NewGuid() });
 
-                context.EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 1) });
-                context.EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 790) });
-                context.EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 3) });
-                context.EntityJSet.Add(new EntityJ { DateValue = DateTime.Now });
-                context.EntityJSet.Add(new EntityJ { DateValue = DateTime.Now.AddDays(7) });
+                EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 1) });
+                EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 790) });
+                EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 3) });
+                EntityJSet.Add(new EntityJ { DateValue = DateTime.Now });
+                EntityJSet.Add(new EntityJ { DateValue = DateTime.Now.AddDays(7) });
 
                 var tenantID2 = Guid.NewGuid();
-                context.TenantEntityASet.Add(new TenantEntityA
+                TenantEntityASet.Add(new TenantEntityA
                 {
                     ID = 1,
                     TenantID = TestContext.TenantID1,
@@ -372,7 +360,7 @@ namespace DynamicFiltersTests
                         new TenantEntityB { ID = 6, TenantID = tenantID2 }
                     }
                 });
-                context.TenantEntityASet.Add(new TenantEntityA
+                TenantEntityASet.Add(new TenantEntityA
                 {
                     ID = 2,
                     TenantID = tenantID2,
@@ -387,7 +375,7 @@ namespace DynamicFiltersTests
                     }
                 });
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

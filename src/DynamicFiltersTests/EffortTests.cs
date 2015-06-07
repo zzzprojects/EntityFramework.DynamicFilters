@@ -71,17 +71,14 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
 
             public TestContext(DbConnection dbConnection)
-                : base(dbConnection, false)
+                : base(dbConnection)
             {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
             }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
@@ -91,12 +88,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityAFilter", (EntityA a) => a.Name == "Joe");
                 modelBuilder.Filter("EntityBFilter", (EntityB b) => b.Name, "Joe");
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
@@ -104,11 +97,11 @@ namespace DynamicFiltersTests
 
                 for (int i = 0; i < 5; i++)
                 {
-                    context.EntityASet.Add(new EntityA { ID = i + 1, Name = names[i] });
-                    context.EntityBSet.Add(new EntityB { ID = i + 1, Name = names[i] });
+                    EntityASet.Add(new EntityA { ID = i + 1, Name = names[i] });
+                    EntityBSet.Add(new EntityB { ID = i + 1, Name = names[i] });
                 }
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 

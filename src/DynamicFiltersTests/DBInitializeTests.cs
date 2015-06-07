@@ -346,7 +346,7 @@ namespace DynamicFiltersTests
 
     #region DBInitializeTestContextBase
 
-    public abstract class DBInitializeTestContextBase : DbContext
+    public abstract class DBInitializeTestContextBase : TestContextBase<DBInitializeTestContextBase>, ITestContext// DbContext
     {
         #region Models
 
@@ -416,22 +416,18 @@ namespace DynamicFiltersTests
             this.SetFilterGlobalParameterValue("EntityCFilter" + FilterSuffix, "value", () => "A");
         }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : DBInitializeTestContextBase
+        public override void Seed()
         {
-            protected override void Seed(T context)
+            System.Diagnostics.Debug.Print("Seeding db");
+
+            for (int i = 1; i <= 10; i++)
             {
-                System.Diagnostics.Debug.Print("Seeding db");
-
-                for (int i = 1; i <= 10; i++)
-                {
-                    context.EntityASet.Add(new EntityA { ID = i });
-                    context.EntityBSet.Add(new EntityB { ID = i });
-                    context.EntityCSet.Add(new EntityC { ID = i, Value = System.Convert.ToChar(64 + i).ToString() });
-                }
-
-                context.SaveChanges();
+                EntityASet.Add(new EntityA { ID = i });
+                EntityBSet.Add(new EntityB { ID = i });
+                EntityCSet.Add(new EntityC { ID = i, Value = System.Convert.ToChar(64 + i).ToString() });
             }
+
+            SaveChanges();
         }
     }
 

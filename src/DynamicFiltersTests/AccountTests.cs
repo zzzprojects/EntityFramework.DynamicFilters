@@ -151,21 +151,13 @@ namespace DynamicFiltersTests
 
         #region TestContext
 
-        public class TestContext : DbContext
+        public class TestContext : TestContextBase<TestContext>, ITestContext
         {
             //  A static/globally scoped value that will be used to restrict queries against the BlogEntries table.
             public static Guid CurrentAccountID { get; set; }
 
             public DbSet<Account> Accounts { get; set; }
             public DbSet<BlogEntry> BlogEntries { get; set; }
-
-            public TestContext()
-                : base("TestContext")
-            {
-                Database.SetInitializer(new ContentInitializer<TestContext>());
-                Database.Log = log => System.Diagnostics.Debug.WriteLine(log);
-                Database.Initialize(false);
-            }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -178,12 +170,8 @@ namespace DynamicFiltersTests
                 //  Filter to test CSpace mapping (issue #1)
                 modelBuilder.Filter("ConceptualNameTest", (Account a, bool remappedEntityProp) => a.RemappedEntityProp == remappedEntityProp, false);
             }
-        }
 
-        public class ContentInitializer<T> : DropCreateDatabaseAlways<T>
-            where T : TestContext
-        {
-            protected override void Seed(T context)
+            public override void Seed()
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
@@ -202,7 +190,7 @@ namespace DynamicFiltersTests
                         new BlogEntry { Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="6"},
                     }
                 };
-                context.Accounts.Add(homer);
+                Accounts.Add(homer);
 
                 var bart = new Account
                 {
@@ -218,9 +206,9 @@ namespace DynamicFiltersTests
                         new BlogEntry { Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="13"},
                     }
                 };
-                context.Accounts.Add(bart);
+                Accounts.Add(bart);
 
-                context.SaveChanges();
+                SaveChanges();
             }
         }
 
