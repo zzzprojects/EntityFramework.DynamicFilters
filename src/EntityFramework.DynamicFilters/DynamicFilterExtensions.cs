@@ -568,27 +568,13 @@ namespace EntityFramework.DynamicFilters
         {
             foreach (DbParameter param in command.Parameters)
             {
-                if (!param.ParameterName.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
-                    continue;
+                //  Item1 = Filter Name
+                //  Item2 = Parameter/Column Name
+                var filterNameAndParam = DynamicFilterDefinition.GetFilterAndParamFromDBParameter(param.ParameterName);
+                if (filterNameAndParam == null)
+                    continue;       //  Not dynamic filter param
 
-                //  parts are:
-                //  1 = Fixed string constant (DynamicFilterConstants.PARAMETER_NAME_PREFIX)
-                //  2 = Filter Name (delimiter char is scrubbed from this field when creating a filter)
-                //  3+ = Column Name (this can contain the delimiter char)
-                var parts = param.ParameterName.Split(new string[] { DynamicFilterConstants.DELIMETER }, StringSplitOptions.None);
-                if (parts.Length < 3)
-                    continue;
-
-                //  If Column contains _ character, it will be split up.  Need to re-combine it.  Delimiter has to be
-                //  a character that is valid in a C# variable name (or EF will throw an exception when setting it).
-                string columnName = parts[2];
-                if (parts.Length > 3)
-                {
-                    for (int i = 3; i < parts.Length; i++)
-                        columnName = string.Concat(columnName, "_", parts[i]);
-                }
-
-                object value = context.GetFilterParameterValue(parts[1], columnName);       //  Middle is the filter name
+                object value = context.GetFilterParameterValue(filterNameAndParam.Item1, filterNameAndParam.Item2);
 
                 //  If not found, leave as the default that EF assigned (which will be a DBNull)
                 if (value == null)
