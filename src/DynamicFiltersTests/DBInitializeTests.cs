@@ -366,6 +366,7 @@ namespace DynamicFiltersTests
 
         public class EntityC : EntityBase
         {
+            [MaxLength(100)] //  Must set MaxLength or Oracle will set column datatype to NCLOB which will then fail comparisons against a string/nvarchar!
             public string Value { get; set; }
         }
 
