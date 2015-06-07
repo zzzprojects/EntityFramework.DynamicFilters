@@ -153,7 +153,19 @@ namespace EntityFramework.DynamicFilters
                     var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), edmProp.Name);
                     var param = columnProperty.Property.TypeUsage.Parameter(filter.CreateDynamicFilterName(filter.ColumnName));
 
-                    dbExpression = DbExpressionBuilder.Equal(columnProperty, param);
+                    if ((columnProperty.ResultType.EdmType.FullName == "Edm.Boolean") 
+                        && param.ResultType.EdmType.FullName.StartsWith("Oracle", StringComparison.CurrentCultureIgnoreCase) && (param.ResultType.EdmType.Name == "number"))    //  Don't trust Oracle's type name to stay the same...
+                    {
+                        //  Special handling needed for columnProperty boolean.  For some reason, the Oracle EF driver does not correctly
+                        //  set the ResultType to a number(1) in columnProperty like it does in columnProperty.Property.TypeUsage.  That
+                        //  results in us trying to do a comparison of a Boolean to a number(1) which causes DbExpressionBuilder.Equal
+                        //  to throw an exception.  To get this to process correctly, we need to do a cast on the columnProperty to
+                        //  "number(1)" so that it matches the param.ResultType.  And that results in the sql sent to Oracle converting
+                        //  the column to the type that it already is...
+                        dbExpression = DbExpressionBuilder.Equal(DbExpressionBuilder.CastTo(columnProperty, param.ResultType), param);
+                    }
+                    else
+                        dbExpression = DbExpressionBuilder.Equal(columnProperty, param);
                 }
                 else if (filter.Predicate != null)
                 {
