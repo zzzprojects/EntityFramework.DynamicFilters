@@ -106,9 +106,10 @@ namespace DynamicFiltersTests
         {
             [Key]
             [Required]
-            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]   //  Oracle does not support generating Guid IDs
             public Guid ID { get; set; }
 
+            [MaxLength(100)] //  Must set MaxLength or Oracle will set column datatype to NCLOB which will then fail comparisons against a string/nvarchar!
             public string UserName { get; set; }
 
             public ICollection<BlogEntry> BlogEntries { get; set; }
@@ -129,19 +130,22 @@ namespace DynamicFiltersTests
         {
             [Key]
             [Required]
-            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]   //  Oracle does not support generating Guid IDs
             public Guid ID { get; set; }
 
             public Account Account { get; set; }
             public Guid AccountID { get; set; }
 
+            [MaxLength(100)] //  Must set MaxLength or Oracle will set column datatype to NCLOB which will then fail comparisons against a string/nvarchar!
             public string Body { get; set; }
 
             public bool IsDeleted { get; set; }
 
             public int? IntValue { get; set; }
 
+            [MaxLength(100)] //  Must set MaxLength or Oracle will set column datatype to NCLOB which will then fail comparisons against a string/nvarchar!
             public string StringValue { get; set; }
+
             public DateTime? DateValue { get; set; }
 
             public bool IsActive { get; set; }
@@ -179,31 +183,33 @@ namespace DynamicFiltersTests
 
                 var homer = new Account
                 {
+                    ID = Guid.NewGuid(),
                     UserName = "homer",
                     BlogEntries = new List<BlogEntry>
                     {
-                        new BlogEntry { Body="Homer's first blog entry", IsDeleted=false, IsActive=true, StringValue="1"},
-                        new BlogEntry { Body="Homer's second blog entry", IsDeleted=false, IsActive=true, StringValue="2"},
-                        new BlogEntry { Body="Homer's third blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="3"},
-                        new BlogEntry { Body="Homer's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="4"},
-                        new BlogEntry { Body="Homer's 5th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="5"},
-                        new BlogEntry { Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="6"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's first blog entry", IsDeleted=false, IsActive=true, StringValue="1"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's second blog entry", IsDeleted=false, IsActive=true, StringValue="2"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's third blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="3"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="4"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's 5th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="5"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Homer's 6th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="6"},
                     }
                 };
                 Accounts.Add(homer);
 
                 var bart = new Account
                 {
+                    ID = Guid.NewGuid(),
                     UserName = "bart",
                     BlogEntries = new List<BlogEntry>
                     {
-                        new BlogEntry { Body="Bart's first blog entry", IsDeleted=false, IsActive=true, StringValue="7"},
-                        new BlogEntry { Body="Bart's second blog entry", IsDeleted=false, IsActive=true, StringValue="8"},
-                        new BlogEntry { Body="Bart's third blog entry", IsDeleted=false, IsActive=true, StringValue="9"},
-                        new BlogEntry { Body="Bart's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="10"},
-                        new BlogEntry { Body="Bart's fifth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="11"},
-                        new BlogEntry { Body="Bart's 6th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="12"},
-                        new BlogEntry { Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="13"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's first blog entry", IsDeleted=false, IsActive=true, StringValue="7"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's second blog entry", IsDeleted=false, IsActive=true, StringValue="8"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's third blog entry", IsDeleted=false, IsActive=true, StringValue="9"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's fourth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="10"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's fifth blog entry (deleted)", IsDeleted=true, IsActive=true, StringValue="11"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's 6th blog entry (inactive)", IsDeleted=false, IsActive=false, StringValue="12"},
+                        new BlogEntry { ID=Guid.NewGuid(), Body="Bart's 7th blog entry (deleted and inactive)", IsDeleted=true, IsActive=false, StringValue="13"},
                     }
                 };
                 Accounts.Add(bart);
