@@ -587,7 +587,8 @@ namespace EntityFramework.DynamicFilters
                     //  Generic collection.  The EF query created for this collection was an '=' condition.
                     //  We need to convert this into an 'in' clause so that we can dynamically set the
                     //  values in the collection.
-                    SetParameterList(value as IEnumerable, param, command);
+                    SetParameterList(value as IEnumerable, param, command, IsOracle(context));
+                    context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
                 }
                 else
                     param.Value = value;
@@ -601,7 +602,8 @@ namespace EntityFramework.DynamicFilters
         /// <param name="paramValueCollection"></param>
         /// <param name="param"></param>
         /// <param name="command"></param>
-        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command)
+        /// <param name="isOracle"></param>
+        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command, bool isOracle)
         {
             int prevStartIndex = 0;
             int paramStartIdx;
@@ -610,7 +612,8 @@ namespace EntityFramework.DynamicFilters
                 int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
 
                 var inCondition = new StringBuilder();
-                inCondition.Append("in (@");
+                inCondition.Append("in (");
+                inCondition.Append(isOracle ? ":" : "@");
                 inCondition.Append(param.ParameterName);
 
                 bool isFirst = true;
@@ -632,7 +635,7 @@ namespace EntityFramework.DynamicFilters
                     else
                     {
                         //  Remaining valus must be inserted directly into the sql 'in' clause
-                        inCondition.AppendFormat(", {0}", QuotedValue(param, value));
+                        inCondition.AppendFormat(", {0}", QuotedValue(param, value, isOracle));
                     }
 
                     isFirst = false;
@@ -648,18 +651,41 @@ namespace EntityFramework.DynamicFilters
             }
         }
 
-        private static string QuotedValue(DbParameter param, object value)
+        private static string QuotedValue(DbParameter param, object value, bool isOracle)
         {
             if (value == null)
                 return "null";
 
             if (value is bool)
                 return (bool)value ? "1" : "0";
+
             if (value is DateTime)
-                return string.Format("'{0:yyyy-MM-dd HH:mm:ss.FFF}'", (DateTime)value);
+            {
+                var d = string.Format("'{0:yyyy-MM-dd HH:mm:ss.fff}'", (DateTime)value);
+                if (isOracle)
+                    return string.Format("to_date({0}, 'YYYY-MM-DD HH24:MI:SS.FF3')", d);
+                return d;
+            }
+
+            if (value is DateTimeOffset)
+            {
+                var d = string.Format("'{0:yyyy-MM-dd HH:mm:ss.fff K}'", (DateTimeOffset)value);
+                if (isOracle)
+                    return string.Format("to_timestamp_tz({0}, 'YYYY-MM-DD HH24:MI:SS.FF3 TZH:TZM')", d);
+                return d;
+            }
 
             if (DbTypeIsNumeric(param.DbType))
                 return value.ToString();
+
+            if (isOracle && (value is Guid))
+            {
+                //  In Oracle, a Guid is stored as RAW(16).  So need to convert the Guid into a byte[] and
+                //  the use the hextoraw function to convert it from a hex string to raw.
+                string hex = BitConverter.ToString(((Guid)value).ToByteArray()).Replace("-", "").ToLower();
+                return string.Format("hextoraw('{0}')", hex);
+            }
+
             return string.Format("'{0}'", value);
         }
 
@@ -689,6 +715,11 @@ namespace EntityFramework.DynamicFilters
         #endregion
 
         #region Private Methods
+
+        private static bool IsOracle(DbContext context)
+        {
+            return context.Database.Connection.GetType().FullName.Contains("Oracle");
+        }
 
         private static string ScrubFilterName(string filterName)
         {

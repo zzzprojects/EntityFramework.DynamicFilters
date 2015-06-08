@@ -16,9 +16,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_ConstantIntList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityASet.ToList();
+                var list = context.EntityASet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(a => (a.ID == 2) || (a.ID == 4) || (a.ID == 6) || (a.ID == 8) || (a.ID == 10)));
             }
         }
@@ -26,9 +26,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicIntList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityBSet.ToList();
+                var list = context.EntityBSet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(b => (b.ID >= 1) && (b.ID <= 5)));
             }
         }
@@ -36,9 +36,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_IntListWithParameterItems()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityCSet.ToList();
+                var list = context.EntityCSet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(b => (b.ID >= 6) && (b.ID <= 10)));
             }
         }
@@ -46,9 +46,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_ConstantNullableIntList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityDSet.ToList();
+                var list = context.EntityDSet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(d => (d.IntValue.Value == 2) || (d.IntValue.Value == 4) || (d.IntValue.Value == 6) || (d.IntValue.Value == 8) || (d.IntValue.Value == 10)));
             }
         }
@@ -56,9 +56,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicNullableIntList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityESet.ToList();
+                var list = context.EntityESet.ToList();
 
                 //  Note: SQL Server does not return records using "in (null)" syntax...
                 Assert.IsTrue((list.Count == 4) && list.All(e => ((e.IntValue.Value >= 1) && (e.IntValue.Value <= 4))));
@@ -68,9 +68,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_NullableIntListWithParameterItems()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityFSet.ToList();
+                var list = context.EntityFSet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(f => (f.IntValue.Value >= 6) && (f.IntValue.Value <= 10)));
             }
         }
@@ -78,9 +78,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicStringList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityGSet.ToList();
+                var list = context.EntityGSet.ToList();
                 Assert.IsTrue((list.Count == 5) && list.All(g => (g.StrValue == "1") || (g.StrValue == "2") || (g.StrValue == "3") || (g.StrValue == "4") || (g.StrValue == "5")));
             }
         }
@@ -88,9 +88,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicBoolList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityHSet.ToList();
+                var list = context.EntityHSet.ToList();
                 Assert.IsTrue((list.Count == 1) && list.All(g => (g.BoolValue == false)));
             }
         }
@@ -98,9 +98,9 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicGuidList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityISet.ToList();
+                var list = context.EntityISet.ToList();
                 Assert.IsTrue((list.Count == 2) && list.All(i => (i.GuidValue == Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF")) || (i.GuidValue == Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF"))));
             }
         }
@@ -108,9 +108,25 @@ namespace DynamicFiltersTests
         [TestMethod]
         public void Contains_DynamicDateList()
         {
-            using (var context1 = new TestContext())
+            using (var context = new TestContext())
             {
-                var list = context1.EntityJSet.ToList();
+                //  The Oracle EF driver stores a DateTime as a DATE type and then throws an error saying
+                //  "The member with identity 'Precision' does not exist in the metadata collection" if you try to use it!
+                //  Only DateTimeOffset works in Oracle (which maps to a TIMESTAMP type)
+                if (context.IsOracle)
+                    return;
+
+                var list = context.EntityJSet.ToList();
+                Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
+            }
+        }
+
+        [TestMethod]
+        public void Contains_DynamicDateTimeOffsetList()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityKSet.ToList();
                 Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
             }
         }
@@ -194,6 +210,7 @@ namespace DynamicFiltersTests
             [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
             public int ID { get; set; }
 
+            [MaxLength(100)] //  Must set MaxLength or Oracle will set column datatype to NCLOB which will then fail comparisons against a string/nvarchar!
             public string StrValue { get; set; }
         }
 
@@ -225,6 +242,16 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
 
             public DateTime DateValue { get; set; }
+        }
+
+        public class EntityK
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            public int ID { get; set; }
+
+            public DateTimeOffset DateValue { get; set; }
         }
 
         public interface ITenant
@@ -272,6 +299,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityH> EntityHSet { get; set; }
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
+            public DbSet<EntityK> EntityKSet { get; set; }
             public DbSet<TenantEntityA> TenantEntityASet { get; set; }
             public DbSet<TenantEntityB> TenantEntityBSet { get; set; }
 
@@ -310,6 +338,8 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityJFilter", (EntityJ j, List<DateTime> valueList) => valueList.Contains(j.DateValue), () => new List<DateTime> { new DateTime(2015, 1, 1), new DateTime(2015, 1, 2, 12, 34, 56, 790), new DateTime(2015, 1, 3) });
 
+                modelBuilder.Filter("EntityHFilter", (EntityK k, List<DateTimeOffset> valueList) => valueList.Contains(k.DateValue), () => new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2015, 1, 1)), new DateTimeOffset(new DateTime(2015, 1, 2, 12, 34, 56, 790)), new DateTimeOffset(new DateTime(2015, 1, 3)) });
+
                 modelBuilder.Filter("TentantEntityFilter", (ITenant t, List<Guid> tenantIDList) => tenantIDList.Contains(t.TenantID), () => new List<Guid> { TestContext.TenantID1, TestContext.TenantID2 });
             }
 
@@ -344,6 +374,12 @@ namespace DynamicFiltersTests
                 EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 3) });
                 EntityJSet.Add(new EntityJ { DateValue = DateTime.Now });
                 EntityJSet.Add(new EntityJ { DateValue = DateTime.Now.AddDays(7) });
+
+                EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 1) });
+                EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 790) });
+                EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 3) });
+                EntityKSet.Add(new EntityK { DateValue = DateTime.Now });
+                EntityKSet.Add(new EntityK { DateValue = DateTime.Now.AddDays(7) });
 
                 var tenantID2 = Guid.NewGuid();
                 TenantEntityASet.Add(new TenantEntityA
