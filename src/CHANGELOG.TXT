@@ -19,3 +19,4 @@
 1.3.14: Fixed Contains() parameter substitution not handling multiple joined entities
 1.3.15: Changed to call context.Database.Initialize(false) internally on method that require the model to be initialized (enable/disable/set params)
 1.3.16: Fixed "Property not found" error on an entity using Table-per-Type inheritance
+1.4.0: Added support for Oracle using the Official Oracle ODP.NET, Managed Entity Framework Driver
