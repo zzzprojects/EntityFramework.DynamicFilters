@@ -440,10 +440,10 @@ namespace EntityFramework.DynamicFilters
                 if (constantExpressionList.Count + parameterExpressionList.Count != listExpression.Initializers.Count)
                     throw new NotSupportedException(string.Format("Unrecognized parameters in Contains list.  Null parameters not supported."));
 
-                if (parameterExpressionList.Any())
+                if (parameterExpressionList.Any() || !SupportsIn())
                 {
-                    //  Have parameters so need to build a series of OR conditions so that we can include the
-                    //  DbParameterReferences.  EF will optimize this into an "in" condition but with our
+                    //  Have parameters or the EF provider does not support the DbInExpression.  Need to build a series of OR conditions so 
+                    //  that we can include the DbParameterReferences.  EF will optimize this into an "in" condition but with our
                     //  DbParameterReferences preserved (which is not possible with a DbInExpression).
                     //  The DbParameterReferences will be intercepted as any other parameter.
                     dbExpression = null;
@@ -465,6 +465,21 @@ namespace EntityFramework.DynamicFilters
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
+        }
+
+        /// <summary>
+        /// Returns true if this provider supports the DbInExpression.  Does this by checking to see if the provider
+        /// is one that is known to NOT to support it will default to assuming it does.
+        /// </summary>
+        /// <returns></returns>
+        private bool SupportsIn()
+        {
+            var entityConnection = _ObjectContext.Connection as System.Data.Entity.Core.EntityClient.EntityConnection;
+            if (entityConnection == null)
+                return true;
+
+            //  Oracle does not support it
+            return !entityConnection.StoreConnection.GetType().FullName.Contains("Oracle");
         }
 
         private void MapStartsWithExpression(MethodCallExpression expression)
