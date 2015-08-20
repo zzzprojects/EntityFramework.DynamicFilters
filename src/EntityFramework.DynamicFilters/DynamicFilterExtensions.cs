@@ -576,22 +576,25 @@ namespace EntityFramework.DynamicFilters
 
                 object value = context.GetFilterParameterValue(filterNameAndParam.Item1, filterNameAndParam.Item2);
 
-                //  If not found, leave as the default that EF assigned (which will be a DBNull)
+                //  If not found, set to DBNull.  It should already be set to that, but it's not in Postgre and we get
+                //  errors if we don't do that now.
                 if (value == null)
-                    continue;
-
-                //  Check to see if it's a collection.  If so, this is an "In" parameter
-                var valueType = value.GetType();
-                if (valueType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(valueType))
-                {
-                    //  Generic collection.  The EF query created for this collection was an '=' condition.
-                    //  We need to convert this into an 'in' clause so that we can dynamically set the
-                    //  values in the collection.
-                    SetParameterList(value as IEnumerable, param, command, IsOracle(context));
-                    context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
-                }
+                    param.Value = DBNull.Value;
                 else
-                    param.Value = value;
+                {
+                    //  Check to see if it's a collection.  If so, this is an "In" parameter
+                    var valueType = value.GetType();
+                    if (valueType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(valueType))
+                    {
+                        //  Generic collection.  The EF query created for this collection was an '=' condition.
+                        //  We need to convert this into an 'in' clause so that we can dynamically set the
+                        //  values in the collection.
+                        SetParameterList(value as IEnumerable, param, command, IsOracle(context));
+                        context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
+                    }
+                    else
+                        param.Value = value;
+                }
             }
         }
 
