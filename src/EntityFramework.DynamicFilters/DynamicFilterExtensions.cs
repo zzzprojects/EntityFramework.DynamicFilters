@@ -590,7 +590,8 @@ namespace EntityFramework.DynamicFilters
                         //  We need to convert this into an 'in' clause so that we can dynamically set the
                         //  values in the collection.
                         SetParameterList(value as IEnumerable, param, command, IsOracle(context));
-                        context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
+                        if (context.Database.Log != null)
+                            context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
                     }
                     else
                         param.Value = value;
