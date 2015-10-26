@@ -22,3 +22,4 @@
 1.4.0: Added support for Oracle using the Official Oracle ODP.NET, Managed Entity Framework Driver
 1.4.1: Set parameter value to DBNull if dynamic parameter not found.  Fixes problem with PostgreSQL.
 1.4.2: Fixed null reference exception when using Contains/IEnumerable and logger not attached to Database context
+1.4.3: Fixed issue handling null constants in expressions

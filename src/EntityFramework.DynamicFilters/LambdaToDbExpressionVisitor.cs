@@ -651,11 +651,16 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         private bool IsNullConstantExpression(Expression expression)
         {
-            UnaryExpression unaryExpr = expression as UnaryExpression;
-            if (unaryExpr == null)
-                return false;
+            var constantExpr = expression as ConstantExpression;
+            if (constantExpr == null)
+            {
+                //  At some point, null constants were stored as a UnaryExpression (at least it was when commit
+                //  #24a5699 on 2/17/2015 was made!)  Not sure when or what caused it to change so left this handling here.
+                UnaryExpression unaryExpr = expression as UnaryExpression;
+                if (unaryExpr != null)
+                    constantExpr = unaryExpr.Operand as ConstantExpression;
+            }
 
-            var constantExpr = unaryExpr.Operand as ConstantExpression;
             if (constantExpr == null)
                 return false;
 
