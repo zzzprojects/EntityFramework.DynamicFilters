@@ -106,6 +106,16 @@ namespace EntityFramework.DynamicFilters
                         dbExpression = DbExpressionBuilder.Or(leftExpression, rightExpression);
                         break;
 
+                    case ExpressionType.And:
+                        dbExpression = EdmFunctions.BitwiseAnd(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.Or:
+                        dbExpression = EdmFunctions.BitwiseOr(leftExpression, rightExpression);
+                        break;
+                    case ExpressionType.ExclusiveOr:
+                        dbExpression = EdmFunctions.BitwiseXor(leftExpression, rightExpression);
+                        break;
+
                     default:
                         throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitBinary", expression.NodeType));
                 }

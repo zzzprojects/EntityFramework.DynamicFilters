@@ -84,6 +84,7 @@
     <Compile Include="AccountTests.cs" />
     <Compile Include="DBInitializeTests.cs" />
     <Compile Include="EffortTests.cs" />
+    <Compile Include="BitwiseOperatorTests.cs" />
     <Compile Include="StartsWithTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="DataTypeTests.cs" />
