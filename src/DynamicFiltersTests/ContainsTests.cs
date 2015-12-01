@@ -34,6 +34,16 @@ namespace DynamicFiltersTests
         }
 
         [TestMethod]
+        public void Contains_Not()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityLSet.ToList();
+                Assert.IsTrue((list.Count == 5) && list.All(b => (b.ID >= 6) && (b.ID <= 10)));
+            }
+        }
+
+        [TestMethod]
         public void Contains_IntListWithParameterItems()
         {
             using (var context = new TestContext())
@@ -254,6 +264,14 @@ namespace DynamicFiltersTests
             public DateTimeOffset DateValue { get; set; }
         }
 
+        public class EntityL
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            public int ID { get; set; }
+        }
+
         public interface ITenant
         {
             Guid TenantID { get; set; }
@@ -300,6 +318,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
             public DbSet<EntityK> EntityKSet { get; set; }
+            public DbSet<EntityL> EntityLSet { get; set; }
             public DbSet<TenantEntityA> TenantEntityASet { get; set; }
             public DbSet<TenantEntityB> TenantEntityBSet { get; set; }
 
@@ -340,6 +359,8 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityKFilter", (EntityK k, List<DateTimeOffset> valueList) => valueList.Contains(k.DateValue), () => new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2015, 1, 1)), new DateTimeOffset(new DateTime(2015, 1, 2, 12, 34, 56, 790)), new DateTimeOffset(new DateTime(2015, 1, 3)) });
 
+                modelBuilder.Filter("EntityLFilter", (EntityL l, List<int> valueList) => !valueList.Contains(l.ID), () => new List<int> { 1, 2, 3, 4, 5 });
+
                 modelBuilder.Filter("TentantEntityFilter", (ITenant t, List<Guid> tenantIDList) => tenantIDList.Contains(t.TenantID), () => new List<Guid> { TestContext.TenantID1, TestContext.TenantID2 });
             }
 
@@ -352,6 +373,7 @@ namespace DynamicFiltersTests
                     EntityASet.Add(new EntityA { ID = i });
                     EntityBSet.Add(new EntityB { ID = i });
                     EntityCSet.Add(new EntityC { ID = i });
+                    EntityLSet.Add(new EntityL { ID = i });
                     EntityDSet.Add(new EntityD { IntValue = i });
                     EntityESet.Add(new EntityE { IntValue = i });
                     EntityFSet.Add(new EntityF { IntValue = i });

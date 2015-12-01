@@ -611,11 +611,24 @@ namespace EntityFramework.DynamicFilters
         {
             int prevStartIndex = 0;
             int paramStartIdx;
+            bool isNotCondition = false;
             while ((paramStartIdx = command.CommandText.IndexOf(param.ParameterName, prevStartIndex)) != -1)
             {
                 int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
+                if (startIdx == -1)
+                {
+                    //  A linq expression of "!Contains(x)" gets mapped to a DbExpression of Not(y == x).
+                    //  (and we then substitute the "x" part down below to the "in" clause).  But EF simplifies
+                    //  it to "y <> x".  So need to detect that here and then also append the "not" to the sql.
+                    startIdx = command.CommandText.LastIndexOf("<>", paramStartIdx);
+                    if (startIdx == -1)
+                        throw new ApplicationException("Failed to find '=' or '<>' condition when trying to inject 'in' clause");
+                    isNotCondition = true;
+                }
 
                 var inCondition = new StringBuilder();
+                if (isNotCondition)
+                    inCondition.Append("not ");
                 inCondition.Append("in (");
                 inCondition.Append(isOracle ? ":" : "@");
                 inCondition.Append(param.ParameterName);

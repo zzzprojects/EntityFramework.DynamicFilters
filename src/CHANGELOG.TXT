@@ -24,3 +24,4 @@
 1.4.2: Fixed null reference exception when using Contains/IEnumerable and logger not attached to Database context
 1.4.3: Fixed issue handling null constants in expressions
 1.4.4: Added support for bitwise operators And/&, Or/|, and Xor/^
+1.4.5: Fixed handling of "!Contains(x)"
