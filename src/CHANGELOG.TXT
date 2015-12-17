@@ -25,3 +25,4 @@
 1.4.3: Fixed issue handling null constants in expressions
 1.4.4: Added support for bitwise operators And/&, Or/|, and Xor/^
 1.4.5: Fixed handling of "!Contains(x)"
+1.4.6: Rebuild to fix UNC paths and slow startup when trying to load debug symbols
