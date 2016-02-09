@@ -328,7 +328,7 @@ namespace DynamicFiltersTests
         {
             using (var context = new TestContext())
             {
-                var paramValue = context.GetFilterParameterValue("EntityAFilter" + context.FilterSuffix, "id");
+                var paramValue = context.GetFilterParameterValue("EntityAFilter" + context.FilterSuffix);
                 Assert.IsTrue((paramValue != null) && (paramValue.GetType() == typeof(int)) && ((int)paramValue == 5));
             }
         }
@@ -336,6 +336,30 @@ namespace DynamicFiltersTests
         public class TestContext : DBInitializeTestContextBase
         {
             public override string FilterSuffix { get { return "GetParameterValue"; } }
+
+            public TestContext()
+            {
+                Database.SetInitializer(new ContentInitializer<TestContext>());
+            }
+        }
+    }
+
+    [TestClass]
+    public class DBInitializeTests_GetParameterValueNamed
+    {
+        [TestMethod]
+        public void DBInitialize_GetParameterValue()
+        {
+            using (var context = new TestContext())
+            {
+                var paramValue = context.GetFilterParameterValue("EntityAFilter" + context.FilterSuffix, "id");
+                Assert.IsTrue((paramValue != null) && (paramValue.GetType() == typeof(int)) && ((int)paramValue == 5));
+            }
+        }
+
+        public class TestContext : DBInitializeTestContextBase
+        {
+            public override string FilterSuffix { get { return "GetParameterValueNamed"; } }
 
             public TestContext()
             {
