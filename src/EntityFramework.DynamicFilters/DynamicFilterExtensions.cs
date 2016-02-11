@@ -463,6 +463,19 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="context"></param>
         /// <param name="filterName"></param>
+        /// <returns></returns>
+        public static object GetFilterParameterValue(this DbContext context, string filterName)
+        {
+            return context.GetFilterParameterValue(filterName, null);
+        }
+
+        /// <summary>
+        /// Returns the value for the filter.  If a scoped value exists within this DbContext, that is returned.
+        /// Otherwise, a global parameter value will be returned.  If the parameter was set with a delegate, the
+        /// delegate is evaluated and the result is returned.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
         /// <param name="parameterName"></param>
         /// <returns></returns>
         public static object GetFilterParameterValue(this DbContext context, string filterName, string parameterName)
@@ -475,7 +488,7 @@ namespace EntityFramework.DynamicFilters
 
             filterName = ScrubFilterName(filterName);
             if (parameterName == null)
-                parameterName = string.Empty;
+                parameterName = GetDefaultParameterNameForFilter(filterName);
 
             ConcurrentDictionary<string, DynamicFilterParameters> contextFilters;
             DynamicFilterParameters filterParams;
