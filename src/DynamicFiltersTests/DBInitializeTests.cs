@@ -348,7 +348,7 @@ namespace DynamicFiltersTests
     public class DBInitializeTests_GetParameterValueNamed
     {
         [TestMethod]
-        public void DBInitialize_GetParameterValue()
+        public void DBInitialize_GetParameterValueNamed()
         {
             using (var context = new TestContext())
             {
