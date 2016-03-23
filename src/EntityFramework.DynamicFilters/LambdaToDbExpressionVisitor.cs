@@ -402,11 +402,26 @@ namespace EntityFramework.DynamicFilters
 
         private void MapContainsExpression(MethodCallExpression expression)
         {
-            DbExpression argExpression = GetDbExpressionForExpression(expression.Arguments[0]);
+            //  For some reason, if the list is IEnumerable and not the List class, the 
+            //  list object (the ParameterExpression object) will be in Argument[0] and the param
+            //  of the Contains() function will be in Argument[1].  And expression.object is null.
+            //  In all other cases, the list object is in expression.Object and the Contains() param is Arguments[0]!
+
+            DbExpression argExpression = null;
+            ParameterExpression collectionObjExp = null;
+
+            if ((expression.Arguments.Count > 1) && (expression.Object == null))
+                collectionObjExp = expression.Arguments[0] as ParameterExpression;
+            if (collectionObjExp != null)
+                argExpression = GetDbExpressionForExpression(expression.Arguments[1]);      //  IEnumerable
+            else
+            {
+                argExpression = GetDbExpressionForExpression(expression.Arguments[0]);      //  List, IList, ICollection
+                collectionObjExp = expression.Object as ParameterExpression;
+            }
 
             DbExpression dbExpression;
 
-            var collectionObjExp = expression.Object as ParameterExpression;
             if (collectionObjExp != null)
             {
                 //  collectionObjExp is a parameter expression.  This means the content of the collection is
@@ -426,7 +441,7 @@ namespace EntityFramework.DynamicFilters
             {
                 var listExpression = expression.Object as ListInitExpression;
                 if (listExpression == null)
-                    throw new NotSupportedException(string.Format("Unsupported object type used in Contains() - type = {0}", expression.Object.GetType().Name));
+                    throw new NotSupportedException(string.Format("Unsupported object type used in Contains() - type = {0}", expression.Object?.GetType().Name ?? "null"));
 
                 //  This is a fixed size list that may contain parameter references or constant values.
                 //  This can be handled using either a DbInExpression (if all are constants) or with

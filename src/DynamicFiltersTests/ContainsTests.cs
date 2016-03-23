@@ -157,6 +157,20 @@ namespace DynamicFiltersTests
             }
         }
 
+        /// <summary>
+        /// Tests issue #59 - Contains against an IEnumerable.  Linq expression is formatted differently
+        /// than a List, IList, ICollection...
+        /// </summary>
+        [TestMethod]
+        public void Contains_IEnumerable()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityMSet.ToList();
+                Assert.IsTrue((list.Count == 2) && (list.All(e => (e.ID == 1) || (e.ID == 2))));
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -272,6 +286,25 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
         }
 
+        public enum TestEnum
+        {
+            Value1,
+            Value2,
+            Value3,
+            Value4,
+            Value5
+        }
+
+        public class EntityM
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+            public int ID { get; set; }
+
+            public TestEnum EnumValue { get; set; }
+        }
+
         public interface ITenant
         {
             Guid TenantID { get; set; }
@@ -319,6 +352,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityJ> EntityJSet { get; set; }
             public DbSet<EntityK> EntityKSet { get; set; }
             public DbSet<EntityL> EntityLSet { get; set; }
+            public DbSet<EntityM> EntityMSet { get; set; }
             public DbSet<TenantEntityA> TenantEntityASet { get; set; }
             public DbSet<TenantEntityB> TenantEntityBSet { get; set; }
 
@@ -361,6 +395,8 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityLFilter", (EntityL l, List<int> valueList) => !valueList.Contains(l.ID), () => new List<int> { 1, 2, 3, 4, 5 });
 
+                modelBuilder.Filter("EntityMFilter", (EntityM m, IEnumerable<TestEnum> valueList) => valueList.Contains(m.EnumValue), () => new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 });
+
                 modelBuilder.Filter("TentantEntityFilter", (ITenant t, List<Guid> tenantIDList) => tenantIDList.Contains(t.TenantID), () => new List<Guid> { TestContext.TenantID1, TestContext.TenantID2 });
             }
 
@@ -402,6 +438,12 @@ namespace DynamicFiltersTests
                 EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 3) });
                 EntityKSet.Add(new EntityK { DateValue = DateTime.Now });
                 EntityKSet.Add(new EntityK { DateValue = DateTime.Now.AddDays(7) });
+
+                EntityMSet.Add(new EntityM { ID = 1, EnumValue = TestEnum.Value1 });
+                EntityMSet.Add(new EntityM { ID = 2, EnumValue = TestEnum.Value2 });
+                EntityMSet.Add(new EntityM { ID = 3, EnumValue = TestEnum.Value3 });
+                EntityMSet.Add(new EntityM { ID = 4, EnumValue = TestEnum.Value4 });
+                EntityMSet.Add(new EntityM { ID = 5, EnumValue = TestEnum.Value5 });
 
                 var tenantID2 = Guid.NewGuid();
                 TenantEntityASet.Add(new TenantEntityA
