@@ -29,12 +29,13 @@ namespace EntityFramework.DynamicFilters
             //  the expressions are properly ()'d.
             //  It also allows us to attach our dynamic filter into the same DbExpressionBinding so it will avoid
             //  creating a new sub-query in MS SQL Server.
+            var predicate = VisitExpression(expression.Predicate);      //  Visit the predicate so filters will be applied to any child properties inside it (issue #61)
 
             string entityName = expression.Input.Variable.ResultType.EdmType.Name;
             var containers = _ObjectContext.MetadataWorkspace.GetItems<EntityContainer>(DataSpace.SSpace).First();
             var filterList = FindFiltersForEntitySet(expression.Input.Variable.ResultType.EdmType.MetadataProperties, containers);
 
-            var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, expression.Input, expression.Predicate);
+            var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, expression.Input, predicate);
             if (newFilterExpression != null)
             {
                 //  If not null, a new DbFilterExpression has been created with our dynamic filters.

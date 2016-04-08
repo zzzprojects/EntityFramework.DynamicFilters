@@ -36,7 +36,20 @@ namespace EntityFramework.DynamicFilters
             var visitor = new LambdaToDbExpressionVisitor(filter, binding, objectContext);
             var expression = visitor.Visit(filter.Predicate) as LambdaExpression;
 
-            return visitor.GetDbExpressionForExpression(expression.Body);
+            var dbExpression = visitor.GetDbExpressionForExpression(expression.Body);
+
+            if (dbExpression is DbPropertyExpression)
+            {
+                //  Special case to handle a condition that is just a plan "boolFlag" condition.
+                //  In order for the sql to generate correct, we need to turn this into "boolFlag = true"
+                //  Figuring out the defaultValue like this should produce the default (0, false, empty) value for the type
+                //  we are working with.  So checking then generating a condition of "not (@var = defaultValue)" should produce
+                //  the correct condition.
+                var defaultValue = DbExpressionBuilder.Constant(dbExpression.ResultType, Activator.CreateInstance(expression.Body.Type));
+                dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.Equal(dbExpression, defaultValue));
+            }
+
+            return dbExpression;
         }
 
         private LambdaToDbExpressionVisitor(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext)
@@ -355,7 +368,18 @@ namespace EntityFramework.DynamicFilters
             switch (expression.NodeType)
             {
                 case ExpressionType.Not:
-                    MapExpressionToDbExpression(expression, DbExpressionBuilder.Not(operandExpression));
+                    if (operandExpression is DbPropertyExpression)
+                    {
+                        //  Special case to handle "!boolFlag": operandExpression is the property for "boolFlag".
+                        //  In order for the sql to generate correct, we need to turn this into "boolFlag = 0"
+                        //  (or we could translate it literally as "not (@noolFlag = 1)")
+                        //  Figuring out the defaultValue like this should produce the default (0, false, empty) value for the type
+                        //  we are working with.  So checking for "@var = defaultValue" should produce the correct condition.
+                        var defaultValue = DbExpressionBuilder.Constant(operandExpression.ResultType, Activator.CreateInstance(expression.Operand.Type));
+                        MapExpressionToDbExpression(expression, DbExpressionBuilder.Equal(operandExpression, defaultValue));
+                    }
+                    else
+                        MapExpressionToDbExpression(expression, DbExpressionBuilder.Not(operandExpression));
                     break;
                 case ExpressionType.Convert:
                     MapExpressionToDbExpression(expression, DbExpressionBuilder.CastTo(operandExpression, TypeUsageForPrimitiveType(expression.Type)));

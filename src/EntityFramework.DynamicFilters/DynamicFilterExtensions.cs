@@ -134,8 +134,9 @@ namespace EntityFramework.DynamicFilters
             filterName = ScrubFilterName(filterName);
 
             //  If ParseColumnNameFromExpression returns null, path is a lambda expression, not a single column expression. 
+            //  If we were not given a value for globalValue then path must be a predicate (i.e. a single bool property) so always treat it as such.
             LambdaExpression predicate = null;
-            string columnName = ParseColumnNameFromExpression(path);
+            string columnName = (globalValue != null) ? ParseColumnNameFromExpression(path) : null;
             if (columnName == null)
                 predicate = path;
 
