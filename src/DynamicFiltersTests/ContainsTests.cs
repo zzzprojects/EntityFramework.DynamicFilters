@@ -1,4 +1,7 @@
-﻿using System;
+﻿//  Define this when testing against MySql - it does not support DateTimeOffset
+//#define SKIP_DATETIMEOFFSET_TEST
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -127,19 +130,26 @@ namespace DynamicFiltersTests
                     return;
 
                 var list = context.EntityJSet.ToList();
-                Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
+
+                //  MySql does not support milliseconds so need to check without
+                if (context.IsMySql)
+                    Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56)) || (j.DateValue == new DateTime(2015, 1, 3)))));
+                else
+                    Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 190)) || (j.DateValue == new DateTime(2015, 1, 3)))));
             }
         }
 
+#if (!SKIP_DATETIMEOFFSET_TEST)
         [TestMethod]
         public void Contains_DynamicDateTimeOffsetList()
         {
             using (var context = new TestContext())
             {
                 var list = context.EntityKSet.ToList();
-                Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 790)) || (j.DateValue == new DateTime(2015, 1, 3)))));
+                Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 190)) || (j.DateValue == new DateTime(2015, 1, 3)))));
             }
         }
+#endif
 
         /// <summary>
         /// Tests issue #31.  Multiple entities being filtered on the same Contains() filter in the same query.
@@ -268,6 +278,7 @@ namespace DynamicFiltersTests
             public DateTime DateValue { get; set; }
         }
 
+#if (!SKIP_DATETIMEOFFSET_TEST)
         public class EntityK
         {
             [Key]
@@ -277,6 +288,7 @@ namespace DynamicFiltersTests
 
             public DateTimeOffset DateValue { get; set; }
         }
+#endif
 
         public class EntityL
         {
@@ -350,7 +362,9 @@ namespace DynamicFiltersTests
             public DbSet<EntityH> EntityHSet { get; set; }
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
+#if (!SKIP_DATETIMEOFFSET_TEST)
             public DbSet<EntityK> EntityKSet { get; set; }
+#endif
             public DbSet<EntityL> EntityLSet { get; set; }
             public DbSet<EntityM> EntityMSet { get; set; }
             public DbSet<TenantEntityA> TenantEntityASet { get; set; }
@@ -389,9 +403,11 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityIFilter", (EntityI i, List<Guid> valueList) => valueList.Contains(i.GuidValue), () => new List<Guid> { Guid.Parse("3A298D91-3857-E411-829F-001C428D83FF"), Guid.Parse("3B298D91-3857-E411-829F-001C428D83FF") });
 
-                modelBuilder.Filter("EntityJFilter", (EntityJ j, List<DateTime> valueList) => valueList.Contains(j.DateValue), () => new List<DateTime> { new DateTime(2015, 1, 1), new DateTime(2015, 1, 2, 12, 34, 56, 790), new DateTime(2015, 1, 3) });
+                modelBuilder.Filter("EntityJFilter", (EntityJ j, List<DateTime> valueList) => valueList.Contains(j.DateValue), () => new List<DateTime> { new DateTime(2015, 1, 1), new DateTime(2015, 1, 2, 12, 34, 56, 190), new DateTime(2015, 1, 3) });
 
-                modelBuilder.Filter("EntityKFilter", (EntityK k, List<DateTimeOffset> valueList) => valueList.Contains(k.DateValue), () => new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2015, 1, 1)), new DateTimeOffset(new DateTime(2015, 1, 2, 12, 34, 56, 790)), new DateTimeOffset(new DateTime(2015, 1, 3)) });
+#if (!SKIP_DATETIMEOFFSET_TEST)
+                modelBuilder.Filter("EntityKFilter", (EntityK k, List<DateTimeOffset> valueList) => valueList.Contains(k.DateValue), () => new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2015, 1, 1)), new DateTimeOffset(new DateTime(2015, 1, 2, 12, 34, 56, 190)), new DateTimeOffset(new DateTime(2015, 1, 3)) });
+#endif
 
                 modelBuilder.Filter("EntityLFilter", (EntityL l, List<int> valueList) => !valueList.Contains(l.ID), () => new List<int> { 1, 2, 3, 4, 5 });
 
@@ -428,16 +444,18 @@ namespace DynamicFiltersTests
                 EntityISet.Add(new EntityI { GuidValue = Guid.NewGuid() });
 
                 EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 1) });
-                EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 790) });
+                EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 190) });
                 EntityJSet.Add(new EntityJ { DateValue = new DateTime(2015, 1, 3) });
                 EntityJSet.Add(new EntityJ { DateValue = DateTime.Now });
                 EntityJSet.Add(new EntityJ { DateValue = DateTime.Now.AddDays(7) });
 
+#if (!SKIP_DATETIMEOFFSET_TEST)
                 EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 1) });
-                EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 790) });
+                EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 2, 12, 34, 56, 190) });
                 EntityKSet.Add(new EntityK { DateValue = new DateTime(2015, 1, 3) });
                 EntityKSet.Add(new EntityK { DateValue = DateTime.Now });
                 EntityKSet.Add(new EntityK { DateValue = DateTime.Now.AddDays(7) });
+#endif
 
                 EntityMSet.Add(new EntityM { ID = 1, EnumValue = TestEnum.Value1 });
                 EntityMSet.Add(new EntityM { ID = 2, EnumValue = TestEnum.Value2 });
@@ -481,6 +499,4 @@ namespace DynamicFiltersTests
 
         #endregion
     }
-
-
 }

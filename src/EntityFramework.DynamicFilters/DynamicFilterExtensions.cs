@@ -593,7 +593,20 @@ namespace EntityFramework.DynamicFilters
                 //  If not found, set to DBNull.  It should already be set to that, but it's not in Postgre and we get
                 //  errors if we don't do that now.
                 if (value == null)
+                {
+                    if (filterNameAndParam.Item2 == DynamicFilterConstants.FILTER_DISABLED_NAME)
+                    {
+                        //  This is the "is disabled" param and the filter is not disabled.  There are cases where
+                        //  including the "OR (@DynamicFilterParam_1 IS NOT NULL)" clause causes problems with
+                        //  SQL Server index usage (it may decide not to use a multi-column index where the first
+                        //  column is the filtered column and another column is also included in the where clause).
+                        //  See issue #53.
+                        //  So we're manually removing that entire condition from the sql.  This will not remove the
+                        //  parameter from being sent, but it will not be part of the sql statement.
+                        RemoveFilterDisabledConditionFromQuery(command, param);
+                    }
                     param.Value = DBNull.Value;
+                }
                 else
                 {
                     //  Check to see if it's a collection.  If so, this is an "In" parameter
@@ -603,7 +616,7 @@ namespace EntityFramework.DynamicFilters
                         //  Generic collection.  The EF query created for this collection was an '=' condition.
                         //  We need to convert this into an 'in' clause so that we can dynamically set the
                         //  values in the collection.
-                        SetParameterList(value as IEnumerable, param, command, IsOracle(context));
+                        SetParameterList(value as IEnumerable, param, command, IsOracle(context), IsMySql(context));
                         if (context.Database.Log != null)
                             context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
                     }
@@ -611,6 +624,23 @@ namespace EntityFramework.DynamicFilters
                         param.Value = value;
                 }
             }
+        }
+
+        private static void RemoveFilterDisabledConditionFromQuery(DbCommand command, DbParameter param)
+        {
+            if (string.IsNullOrEmpty(command.CommandText))
+                return;
+
+            int paramIdx = command.CommandText.IndexOf(param.ParameterName);
+            if (paramIdx < 0)
+                return;
+
+            int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
+            int endIdx = command.CommandText.IndexOf(")", paramIdx);
+            if ((startIdx < 0) || (endIdx < 0))
+                return;
+
+            command.CommandText = command.CommandText.Remove(startIdx, endIdx - startIdx + 1);
         }
 
         /// <summary>
@@ -621,24 +651,17 @@ namespace EntityFramework.DynamicFilters
         /// <param name="param"></param>
         /// <param name="command"></param>
         /// <param name="isOracle"></param>
-        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command, bool isOracle)
+        /// <param name="isMySql"></param>
+        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command, bool isOracle, bool isMySql)
         {
             int prevStartIndex = 0;
             int paramStartIdx;
             bool isNotCondition = false;
             while ((paramStartIdx = command.CommandText.IndexOf(param.ParameterName, prevStartIndex)) != -1)
             {
-                int startIdx = command.CommandText.LastIndexOf("=", paramStartIdx);
+                int startIdx = FindLastComparisonOperator(command.CommandText, paramStartIdx, out isNotCondition);
                 if (startIdx == -1)
-                {
-                    //  A linq expression of "!Contains(x)" gets mapped to a DbExpression of Not(y == x).
-                    //  (and we then substitute the "x" part down below to the "in" clause).  But EF simplifies
-                    //  it to "y <> x".  So need to detect that here and then also append the "not" to the sql.
-                    startIdx = command.CommandText.LastIndexOf("<>", paramStartIdx);
-                    if (startIdx == -1)
-                        throw new ApplicationException("Failed to find '=' or '<>' condition when trying to inject 'in' clause");
-                    isNotCondition = true;
-                }
+                    throw new ApplicationException("Failed to find '=' or '<>' condition when trying to inject 'in' clause");
 
                 var inCondition = new StringBuilder();
                 if (isNotCondition)
@@ -666,7 +689,7 @@ namespace EntityFramework.DynamicFilters
                     else
                     {
                         //  Remaining valus must be inserted directly into the sql 'in' clause
-                        inCondition.AppendFormat(", {0}", QuotedValue(param, value, isOracle));
+                        inCondition.AppendFormat(", {0}", QuotedValue(param, value, isOracle, isMySql));
                     }
 
                     isFirst = false;
@@ -682,7 +705,25 @@ namespace EntityFramework.DynamicFilters
             }
         }
 
-        private static string QuotedValue(DbParameter param, object value, bool isOracle)
+        private static int FindLastComparisonOperator(string commandText, int fromIdx, out bool isNotCondition)
+        {
+            //  Find the <> or = operator that is closest to fromIdx.  If we don't find the closest, would be
+            //  possible for us to match on a condition that is earlier in the sql statement.
+
+            //  MySql uses "!=" syntax.  Not possible to find both.
+            int notEqualIdx = commandText.LastIndexOf("!=", fromIdx);
+            if (notEqualIdx == -1)
+                notEqualIdx = commandText.LastIndexOf("<>", fromIdx);
+
+            int equalIdx = commandText.LastIndexOf("=", fromIdx);
+            if (equalIdx == notEqualIdx + 1)    //  Don't want to match on the "=" in "!="
+                equalIdx = -1;
+
+            isNotCondition = notEqualIdx > equalIdx;
+            return Math.Max(notEqualIdx, equalIdx);
+        }
+
+        private static string QuotedValue(DbParameter param, object value, bool isOracle, bool isMySql)
         {
             if (value == null)
                 return "null";
@@ -692,7 +733,11 @@ namespace EntityFramework.DynamicFilters
 
             if (value is DateTime)
             {
-                var d = string.Format("'{0:yyyy-MM-dd HH:mm:ss.fff}'", (DateTime)value);
+                string d;
+                if (isMySql)
+                    d = string.Format("'{0:yyyy-MM-dd HH:mm:ss}'", (DateTime)value);        //  MySql does not support milliseconds and will fail to match if we include it
+                else
+                    d = string.Format("'{0:yyyy-MM-dd HH:mm:ss.fff}'", (DateTime)value);
                 if (isOracle)
                     return string.Format("to_date({0}, 'YYYY-MM-DD HH24:MI:SS.FF3')", d);
                 return d;
@@ -750,6 +795,11 @@ namespace EntityFramework.DynamicFilters
         private static bool IsOracle(DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("Oracle");
+        }
+
+        private static bool IsMySql(DbContext context)
+        {
+            return context.Database.Connection.GetType().FullName.Contains("MySql");
         }
 
         private static string ScrubFilterName(string filterName)

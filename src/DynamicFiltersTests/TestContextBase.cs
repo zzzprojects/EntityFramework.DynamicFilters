@@ -74,6 +74,10 @@ namespace DynamicFiltersTests
         {
             get { return Database.Connection.GetType().FullName.Contains("Oracle"); }
         }
+        public bool IsMySql
+        {
+            get { return Database.Connection.GetType().FullName.Contains("MySql"); }
+        }
 
         public string SchemaName
         {

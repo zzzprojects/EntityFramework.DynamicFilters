@@ -28,3 +28,5 @@
 1.4.6: Rebuild to fix UNC paths and slow startup when trying to load debug symbols
 1.4.7: Added GetFilterParameterValue method for unnamed parameter
 1.4.8: Fixed Contains() to support IEnumerable collections
+1.4.9: Fixed filters not being applied to "ChildCollection.Any()" condition in .Where clause.  Fixed handling of single property bool conditions in filters (i.e. "e.BoolFlag" or "!e.BoolFlag").
+1.4.10: Generated SQL now does not include the "OR (@DynamicFilterParam_1 IS NOT NULL)" clause if filter is not disabled - fixes bad index usage in some cases on SQL Server.  Will still be included if filter is disabled.  Also fixed some "contains" issues with MySql.
