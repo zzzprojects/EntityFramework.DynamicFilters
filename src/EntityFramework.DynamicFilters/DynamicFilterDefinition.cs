@@ -53,7 +53,9 @@ namespace EntityFramework.DynamicFilters
                     _ParamIndexToFilterAndParam[dbParamIndex] = filterParamKey;
                 }
 
-                return string.Concat(DynamicFilterConstants.PARAMETER_NAME_PREFIX, DynamicFilterConstants.DELIMETER, dbParamIndex.ToString());
+                //  Using 6 digits here because we are now looking for the "is disabled" parameter by name in the sql statement to
+                //  remove it when the filter is enabled.  Don't want to match on "_10" when we're looking for "_1".
+                return string.Format("{0}{1}{2:D6}", DynamicFilterConstants.PARAMETER_NAME_PREFIX, DynamicFilterConstants.DELIMETER, dbParamIndex);
             }
         }
 

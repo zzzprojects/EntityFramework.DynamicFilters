@@ -604,6 +604,11 @@ namespace EntityFramework.DynamicFilters
                         //  So we're manually removing that entire condition from the sql.  This will not remove the
                         //  parameter from being sent, but it will not be part of the sql statement.
                         RemoveFilterDisabledConditionFromQuery(command, param);
+
+#if (DEBUG)
+                        if (!string.IsNullOrEmpty(command.CommandText) && command.CommandText.Contains(param.ParameterName))
+                            throw new ApplicationException(string.Format("CommandText still contains ParameterName {0} after RemoveFilterDisabledConditionFromQuery", param.ParameterName));
+#endif
                     }
                     param.Value = DBNull.Value;
                 }
@@ -631,16 +636,23 @@ namespace EntityFramework.DynamicFilters
             if (string.IsNullOrEmpty(command.CommandText))
                 return;
 
-            int paramIdx = command.CommandText.IndexOf(param.ParameterName);
-            if (paramIdx < 0)
-                return;
+            //  Parameter may appear multiple times so need to loop until we do not find it any more
+            int paramIdx;
+            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName)) != -1)
+            {
+                int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
+                int endIdx = command.CommandText.IndexOf(")", paramIdx);
+                if ((startIdx < 0) || (endIdx < 0))
+                {
+#if (DEBUG)
+                    throw new ApplicationException(string.Format("Failed to find start or end index of remove filter clause for parameter name {0}", param.ParameterName));
+#else
+                    return;
+#endif
+                }
 
-            int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
-            int endIdx = command.CommandText.IndexOf(")", paramIdx);
-            if ((startIdx < 0) || (endIdx < 0))
-                return;
-
-            command.CommandText = command.CommandText.Remove(startIdx, endIdx - startIdx + 1);
+                command.CommandText = command.CommandText.Remove(startIdx, endIdx - startIdx + 1);
+            }
         }
 
         /// <summary>

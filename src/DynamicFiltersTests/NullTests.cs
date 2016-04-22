@@ -123,6 +123,17 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void NullableType_NullableEqualsNull()
+        {
+            using (var context = new TestContext())
+            {
+                int id = 3;
+                var list = context.EntityISet.Where(i => i.ID == id).ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 3));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -167,6 +178,9 @@ namespace DynamicFiltersTests
         public class EntityH : EntityBase
         { }
 
+        public class EntityI : EntityBase
+        { }
+
         #endregion
 
         #region TestContext
@@ -181,6 +195,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityF> EntityFSet { get; set; }
             public DbSet<EntityG> EntityGSet { get; set; }
             public DbSet<EntityH> EntityHSet { get; set; }
+            public DbSet<EntityI> EntityISet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -216,6 +231,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityGFilter", (EntityG g, int? tenantID) => g.TenantID == tenantID.Value, () => 2);
 
                 modelBuilder.Filter("EntityHFilter", (EntityH h, int tenantID) => (int)h.TenantID == tenantID, () => 1);
+
+                modelBuilder.Filter("EntityIFilter", (EntityI i) => i.TenantID == null);
             }
 
             public override void Seed()
@@ -247,6 +264,10 @@ namespace DynamicFiltersTests
                 EntityHSet.Add(new EntityH { ID = 1, TenantID = 1 });
                 EntityHSet.Add(new EntityH { ID = 2, TenantID = 2 });
                 EntityHSet.Add(new EntityH { ID = 3, TenantID = null });
+
+                EntityISet.Add(new EntityI { ID = 1, TenantID = 1 });
+                EntityISet.Add(new EntityI { ID = 2, TenantID = 2 });
+                EntityISet.Add(new EntityI { ID = 3, TenantID = null });
 
                 SaveChanges();
             }
