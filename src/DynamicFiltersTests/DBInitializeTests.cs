@@ -423,9 +423,6 @@ namespace DynamicFiltersTests
         {
             base.OnModelCreating(modelBuilder);
 
-            //  Reset DynamicFilters to an initial state - this discards anything statically cached from other tests
-            modelBuilder.ResetDynamicFilters(); //  *** Do not do this in normal production code! ***
-
             modelBuilder.Filter("EntityAFilter" + FilterSuffix, (EntityA a, int id) => a.ID < id, () => 5);
             modelBuilder.Filter("EntityBFilter" + FilterSuffix, (EntityB b, int id) => b.ID < id, () => 5);
             modelBuilder.DisableFilterGlobally("EntityBFilter" + FilterSuffix);

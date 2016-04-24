@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
@@ -28,6 +29,13 @@ namespace EntityFramework.DynamicFilters
         /// Values: A dictionary defined as _GlobalParameterValues that contains the scoped parameter values for the DbContext
         /// </summary>
         private static ConcurrentDictionary<DbContext, ConcurrentDictionary<string, DynamicFilterParameters>> _ScopedParameterValues = new ConcurrentDictionary<DbContext, ConcurrentDictionary<string, DynamicFilterParameters>>();
+
+        /// <summary>
+        /// These properties are used to prevent adding conditions to the sql queries to check to see if filters are
+        /// enabled/disabled.  Once this is set, it cannot be undone because EF only gives us 1 shot at including those
+        /// conditions.
+        /// </summary>
+        private static HashSet<string> _PreventDisabledFilterConditions = new HashSet<string>();
 
         #endregion
 
@@ -58,6 +66,7 @@ namespace EntityFramework.DynamicFilters
         {
             _GlobalParameterValues = new ConcurrentDictionary<string, DynamicFilterParameters>();
             _ScopedParameterValues = new ConcurrentDictionary<DbContext, ConcurrentDictionary<string, DynamicFilterParameters>>();
+            _PreventDisabledFilterConditions = new HashSet<string>();
         }
 
         #endregion
@@ -256,6 +265,9 @@ namespace EntityFramework.DynamicFilters
         /// <param name="filterName"></param>
         public static void EnableFilter(this DbContext context, string filterName)
         {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
             context.Database.Initialize(false);
 
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
@@ -271,7 +283,10 @@ namespace EntityFramework.DynamicFilters
             context.Database.Initialize(false);
 
             foreach (var filterName in _GlobalParameterValues.Keys.ToList())
-                EnableFilter(context, filterName);
+            {
+                if (AreFilterDisabledConditionsAllowed(filterName))
+                    EnableFilter(context, filterName);
+            }
         }
 
         /// <summary>
@@ -281,6 +296,9 @@ namespace EntityFramework.DynamicFilters
         /// <param name="filterName"></param>
         public static void DisableFilter(this DbContext context, string filterName)
         {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
             context.Database.Initialize(false);
 
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
@@ -295,8 +313,11 @@ namespace EntityFramework.DynamicFilters
         {
             context.Database.Initialize(false);
 
-            foreach(var filterName in _GlobalParameterValues.Keys.ToList())
-                DisableFilter(context, filterName);
+            foreach (var filterName in _GlobalParameterValues.Keys.ToList())
+            {
+                if (AreFilterDisabledConditionsAllowed(filterName))
+                    DisableFilter(context, filterName);
+            }
         }
 
         /// <summary>
@@ -306,6 +327,9 @@ namespace EntityFramework.DynamicFilters
         /// <param name="filterName"></param>
         public static void DisableFilterGlobally(this DbModelBuilder modelBuilder, string filterName)
         {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
             filterName = ScrubFilterName(filterName);
 
             _GlobalParameterValues.AddOrUpdate(filterName,
@@ -320,6 +344,51 @@ namespace EntityFramework.DynamicFilters
                     currValues.Enabled = false;
                     return currValues;
                 });
+        }
+
+        /// <summary>
+        /// Prevent the inclusion of conditions in the sql query used to enable/disable filters.  This will completely
+        /// prevent the ability to enable & disable filters globally throughout the application.
+        /// Once this is set, it cannot be undone because EF only gives us 1 shot at including those conditions.
+        /// Will apply to all filters defined at the time this method is called.  So to apply to all filters,
+        /// call this after they have all been defined.
+        /// </summary>
+        /// <param name="modelBuilder"></param>
+        public static void PreventAllDisabledFilterConditions(this DbModelBuilder modelBuilder)
+        {
+            //  Not tracking a single bool to turn this off everywhere because it would have to be a static property.
+            //  And if there are multiple DbContexts being used, setting it once would apply to all of them.
+            //  So tracking this per filter so it can at least be managed by filter name.
+            foreach (var filterName in _GlobalParameterValues.Keys)
+                _PreventDisabledFilterConditions.Add(filterName);
+        }
+
+        /// <summary>
+        /// Prevent the inclusion of conditions in the sql query used to enable/disable the named filter.  This will completely
+        /// prevent the ability to enable & disable filters globally throughout the application.
+        /// Once this is set, it cannot be undone because EF only gives us 1 shot at including those conditions.
+        /// </summary>
+        /// <param name="modelBuilder"></param>
+        /// <param name="filterName"></param>
+        public static void PreventDisabledFilterConditions(this DbModelBuilder modelBuilder, string filterName)
+        {
+            filterName = ScrubFilterName(filterName);
+            if (!_GlobalParameterValues.ContainsKey(filterName))
+                throw new ApplicationException(string.Format("Filter {0} not defined", filterName));
+
+            _PreventDisabledFilterConditions.Add(filterName);
+        }
+
+        /// <summary>
+        /// Checks to see if Enable/Disable filter conditions are allowed.  If not allowed, these conditions will not
+        /// be added to the sql query so filters cannot be enabled/disabled.
+        /// </summary>
+        /// <param name="filterName"></param>
+        /// <returns></returns>
+        public static bool AreFilterDisabledConditionsAllowed(string filterName)
+        {
+            filterName = ScrubFilterName(filterName);
+            return !_PreventDisabledFilterConditions.Contains(filterName);
         }
 
         #endregion

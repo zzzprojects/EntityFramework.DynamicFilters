@@ -94,6 +94,22 @@ context.EnableAllFilters();
 
 However, note that if a query is executed with a filter disabled, Entity Framework will cache those entities internally.  If you then enable a filter, cached entities may be included in child collections that otherwise should not be.  Entity Framework caches per DbContext so if you find this to be an issue, you can avoid it by using a fresh DbContext.
 
+In order to be able to dynamically enable/disable filters, a special condition is added to the sql query that will look something like:
+```
+OR (@DynamicFilterParam_000001 IS NOT NULL)
+```
+If the filter is enabled, this condition is dynamically excluded from the sql just before execution but will be present when the filter is disabled (and the parameter value will be set to 1).  In both cases, the parameter will be listed in the parameter list sent in the query.  
+
+If you will never require the need to enable or disable filters at any time during the application life cycle, you can prevent this condition entirely using these 2 methods:
+```
+modelBuilder.PreventDisabledFilterConditions("IsDeleted");  // disable a single filter
+modelBuilder.PreventAllDisabledFilterConditions();          // disable all filters defined up to calling this method
+```
+This can only be done during OnModelCreating and once turned off, can not be turned back on.  This is because we only have 1 opportunity to include this condition in the query so once the query is compiled, we cannot change it.
+
+In most cases, this condition should not affect query performance at all - especially since we exclude it when the filter is enabled.  But if additional conditions are used in the where clause and a multi-column index is involved, this condition may cause SQL Server to choose the wrong index or perform a table scan.  You should examine the performance of your queries and index usage to determine if this is an issue for you.
+
+
 Oracle Support
 --------------
 Oracle is supported using the [Official Oracle ODP.NET, Managed Entity Framework Driver](https://www.nuget.org/packages/Oracle.ManagedDataAccess.EntityFramework) with the following limitations:

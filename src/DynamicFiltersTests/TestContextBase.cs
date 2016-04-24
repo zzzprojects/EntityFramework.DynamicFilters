@@ -5,6 +5,7 @@ using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EntityFramework.DynamicFilters;
 using Oracle.ManagedDataAccess.Client;
 
 namespace DynamicFiltersTests
@@ -64,6 +65,9 @@ namespace DynamicFiltersTests
                 //  And it must be upper case.
                 modelBuilder.HasDefaultSchema(SchemaName);
             }
+
+            //  Reset DynamicFilters to an initial state - this discards anything statically cached from other tests
+            modelBuilder.ResetDynamicFilters(); //  *** Do not do this in normal production code! ***
 
             base.OnModelCreating(modelBuilder);
         }

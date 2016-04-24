@@ -176,13 +176,18 @@ namespace EntityFramework.DynamicFilters
                 else
                     throw new System.ArgumentException(string.Format("Filter {0} does not contain a ColumnName or a Predicate!", filter.FilterName));
 
-                //  Create an expression to check to see if the filter has been disabled and include that check with the rest of the filter expression.
-                //  When this parameter is null, the filter is enabled.  It will be set to true (in DynamicFilterExtensions.GetFilterParameterValue) if
-                //  the filter has been disabled.
-                var boolPrimitiveType = LambdaToDbExpressionVisitor.TypeUsageForPrimitiveType(typeof(bool?), _ObjectContext);
-                var isDisabledParam = boolPrimitiveType.Parameter(filter.CreateFilterDisabledParameterName());
+                if (DynamicFilterExtensions.AreFilterDisabledConditionsAllowed(filter.FilterName))
+                {
+                    //  Create an expression to check to see if the filter has been disabled and include that check with the rest of the filter expression.
+                    //  When this parameter is null, the filter is enabled.  It will be set to true (in DynamicFilterExtensions.GetFilterParameterValue) if
+                    //  the filter has been disabled.
+                    var boolPrimitiveType = LambdaToDbExpressionVisitor.TypeUsageForPrimitiveType(typeof(bool?), _ObjectContext);
+                    var isDisabledParam = boolPrimitiveType.Parameter(filter.CreateFilterDisabledParameterName());
 
-                conditionList.Add(DbExpressionBuilder.Or(dbExpression, DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(isDisabledParam))));
+                    conditionList.Add(DbExpressionBuilder.Or(dbExpression, DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(isDisabledParam))));
+                }
+                else
+                    conditionList.Add(dbExpression);
             }
 
             int numConditions = conditionList.Count;

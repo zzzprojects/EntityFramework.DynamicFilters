@@ -92,6 +92,28 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void DisableFilter_FilterDisablingOff_NoParamFilter()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                var list = context.EntityDSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+            }
+        }
+
+        [TestMethod]
+        public void DisableFilter_FilterDisablingOff_SingleParamFilter()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                var list = context.EntityESet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -118,6 +140,22 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
         }
 
+        public class EntityD
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
+        public class EntityE
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -127,6 +165,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
+            public DbSet<EntityD> EntityDSet { get; set; }
+            public DbSet<EntityE> EntityESet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -140,6 +180,12 @@ namespace DynamicFiltersTests
 
                 //  No parmeter filter (issue #22)
                 modelBuilder.Filter("EntityCFilter", (EntityC c) => c.ID < 5);
+
+                modelBuilder.Filter("EntityDFilter", (EntityD d) => d.ID < 5);
+                modelBuilder.PreventDisabledFilterConditions("EntityDFilter");
+
+                modelBuilder.Filter("EntityEFilter", (EntityE e, int value) => e.ID < value, () => 5);
+                modelBuilder.PreventDisabledFilterConditions("EntityEFilter");
             }
 
             public override void Seed()
@@ -151,6 +197,8 @@ namespace DynamicFiltersTests
                     EntityASet.Add(new EntityA { ID = i });
                     EntityBSet.Add(new EntityB { ID = i });
                     EntityCSet.Add(new EntityC { ID = i });
+                    EntityDSet.Add(new EntityD { ID = i });
+                    EntityESet.Add(new EntityE { ID = i });
                 }
 
                 SaveChanges();
