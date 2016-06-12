@@ -33,3 +33,4 @@
 1.4.10.1: Fixed to remove multiple occurrences of filter disabled params (can appear multiple times in complex queries)
 1.4.10.2: Added methods to turn off the enable/disable filter functionality completely so those conditions are not included in sql query at all
 1.4.10.3: Fixed issues removing disabled filter condition on PostgreSQL
+1.4.11: Signed the assembly
