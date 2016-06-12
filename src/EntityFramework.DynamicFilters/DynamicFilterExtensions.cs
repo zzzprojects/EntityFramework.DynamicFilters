@@ -711,6 +711,25 @@ namespace EntityFramework.DynamicFilters
             {
                 int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
                 int endIdx = command.CommandText.IndexOf(")", paramIdx);
+
+                if (endIdx == -1)
+                {
+                    //  PostgreSQL does not wrap all conditions in () (see below for example) so we may not find this.
+                    //  So assume end of line.
+                    endIdx = command.CommandText.Length - 1;
+                }
+                else
+                {
+                    //  PostgreSQL formats the sql like this: ("Var_1"."ID" < @DynamicFilterParam_000001 OR @DynamicFilterParam_000002 IS NOT NULL)
+                    //  While other DBs format like this:     (("Var_1"."ID" < @DynamicFilterParam_000001) OR (@DynamicFilterParam_000002 IS NOT NULL))
+                    //  (note the extra ()'s which are not present in PostgreSQL).
+                    //  So while we found the ending ")", we may or may not want to actually remove it.
+                    //  Determine that by checking for the presence of an opening "(" in between the "or" and the parameter name
+                    var openingParenIndex = command.CommandText.IndexOf("(", startIdx);
+                    if ((openingParenIndex < startIdx) || (openingParenIndex > paramIdx))
+                        endIdx--;       //  Do not have opening paren so do not remove the trailing ")"!
+                }
+
                 if ((startIdx < 0) || (endIdx < 0))
                 {
 #if (DEBUG)
