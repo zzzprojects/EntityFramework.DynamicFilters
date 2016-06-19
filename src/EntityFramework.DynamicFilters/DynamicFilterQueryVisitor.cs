@@ -1,4 +1,8 @@
-﻿using System;
+﻿#if DEBUG
+#define DEBUG_VISITS
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Core.Common.CommandTrees;
@@ -21,6 +25,11 @@ namespace EntityFramework.DynamicFilters
             _ObjectContext = ((IObjectContextAdapter)contextForInterception).ObjectContext;
         }
 
+        //  Prior to switching to CSpace (to allow filters on navigation properties), also had to 
+        //  override Visit(DbFilterExpression) to force the filter expression.Predicate to be parsed
+        //  and build the filter expression.  When using CSpace, that is not necessary.  Those filters
+        //  appear properly in the rest of the Visit overrides so no special handling is required.
+#if !USE_CSPACE
         public override DbExpression Visit(DbFilterExpression expression)
         {
             //  If the query contains it's own filter condition (in a .Where() for example), this will be called
@@ -44,12 +53,20 @@ namespace EntityFramework.DynamicFilters
 
             return base.Visit(expression);
         }
+#endif
 
         public override DbExpression Visit(DbScanExpression expression)
         {
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbScanExpression): Target.Name={0}", expression.Target.Name);
+#endif
+            //  If using SSpace:
             //  This method will be called for all query expressions.  If there is a filter included (in a .Where() for example),
             //  Visit(DbFilterExpression) will be called first and our dynamic filters will have already been included.
             //  Otherwise, we do that here.
+            //  If using CSpace:
+            //  This method will only be called for the initial entity.  Any other references to other entities will be
+            //  handled by the Visit(DbPropertyExpression) - this includes filter references and includes.
 
             string entityName = expression.Target.Name;
             var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties, expression.Target.EntityContainer);
@@ -69,13 +86,108 @@ namespace EntityFramework.DynamicFilters
             return baseResult;
         }
 
+#if USE_CSPACE
+        //  This is called for any navigation property reference so we can apply filters for those entities here.
+        //  That includes any navigation properties referenced in functions (.Where() clauses) and also any
+        //  child entities that are .Include()'d.
+        public override DbExpression Visit(DbPropertyExpression expression)
+        {
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbPropertyExpression): EdmType.Name={0}", expression.ResultType.ModelTypeUsage.EdmType.Name);
+#endif
+            var baseResult = base.Visit(expression);
+
+            var basePropertyResult = baseResult as DbPropertyExpression;
+            if (basePropertyResult == null)
+                return baseResult;      //  base.Visit changed type!
+
+            var navProp = basePropertyResult.Property as NavigationProperty;
+            if (navProp != null)
+            {
+                var targetEntityType = navProp.ToEndMember.GetEntityType();
+
+                string entityName = targetEntityType.Name;
+                var containers = _ObjectContext.MetadataWorkspace.GetItems<EntityContainer>(DataSpace.CSpace).First();
+                var filterList = FindFiltersForEntitySet(targetEntityType.MetadataProperties, containers);
+
+                if (filterList.Any())
+                {
+                    //  If the expression contains a collection (i.e. the child property is an IEnumerable), we can bind directly to it.
+                    //  Otherwise, we have to create a DbScanExpression over the ResultType in order to bind.
+                    if (baseResult.ResultType.EdmType.BuiltInTypeKind == BuiltInTypeKind.CollectionType)
+                    {
+                        var binding = DbExpressionBuilder.Bind(baseResult);
+                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
+                        if (newFilterExpression != null)
+                        {
+                            //  If not null, a new DbFilterExpression has been created with our dynamic filters.
+                            return newFilterExpression;
+                        }
+                    }
+                    else if (baseResult.ResultType.EdmType.BuiltInTypeKind == BuiltInTypeKind.EntityType)
+                    {
+                        //  This is not supported because could not figure out how to make a binding against the single property.
+                        //  Need to somehow project it into a collection.  But everything I tried just kept complaining 
+                        //  about the property not being a collection!
+                        //  The attempt below creates a Scan of the entity and does add the filter into it.  But then could
+                        //  not figure out how to properly return that expression such that the NaviationProperty/Join
+                        //  gets wired up correctly.  The return from this method (in this case) *MUST* be a single entity.
+                        //  So may need to try to figure out how to get the correct join conditions from the NavigationProperty,
+                        //  apply those conditions (or maybe create a DbJoinExpression from them), and then use Element() to
+                        //  return a single object.
+                        //  Note that EF itself DOES NOT SUPPORT THIS EITHER!
+                        //  Failing test cases have names starting with: KNOWN_ISSUE
+                        throw new ApplicationException("Filters on single/non-collection navigation properties are not allowed");
+
+                        /*
+                        var navProp = expression.Property as NavigationProperty;
+
+                        var entityType = ((NavigationProperty)expression.Property).ToEndMember.GetEntityType();
+                        var entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.Name);
+                        var scanExpr = DbExpressionBuilder.Scan(entitySet);
+                        var binding = DbExpressionBuilder.Bind(scanExpr);
+
+                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
+                        if (newFilterExpression != null)
+                        {
+                            //  If not null, a new DbFilterExpression has been created with our dynamic filters.
+                            return navExpression;
+                            //return newFilterExpression.Element();     //  returns 1 item like we need but does not include the join conditions
+                        }
+                        */
+                    }
+                }
+            }
+
+            return baseResult;
+        }
+#endif
+
         private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties, EntityContainer entityContainer)
         {
+#if USE_CSPACE
+            var configuration = metadataProperties.FirstOrDefault(p => p.Name == "Configuration")?.Value;
+            if (configuration == null)
+                return new List<DynamicFilterDefinition>();
+
+            var annotations = configuration.GetType().GetProperty("Annotations").GetValue(configuration, null) as Dictionary<string, object>;
+            if (annotations == null)
+                return new List<DynamicFilterDefinition>();
+
+            var filterList = annotations.Select(a => a.Value as DynamicFilterDefinition).Where(a => a != null).ToList();
+#else
             var filterList = metadataProperties
                 .Where(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX))
                 .Select(m => m.Value as DynamicFilterDefinition)
                 .ToList();
+#endif
 
+            //  Note: Prior to the switch to use CSpace (which was done to allow filters on navigation properties),
+            //  we had to remove filters that exist in base EntitySets to this entity to fix issues with 
+            //  Table-per-Type inheritance (issue #32).  In CSpace none of that is necessary since we are working
+            //  with the actual c# models now (in CSpace) so we always have the correct filters and access to all
+            //  the inherited properties that we need.
+#if !USE_CSPACE
             if (filterList.Any())
             {
                 //  Recursively remove any filters that exist in base EntitySets to this entity.
@@ -88,10 +200,12 @@ namespace EntityFramework.DynamicFilters
                 //  See issue #32.
                 RemoveFiltersForBaseClass(filterList.First().CLRType, filterList, entityContainer);
             }
+#endif
 
             return filterList;
         }
 
+#if !USE_CSPACE
         private void RemoveFiltersForBaseClass(Type clrType, List<DynamicFilterDefinition> filterList, EntityContainer entityContainer)
         {
             if (!filterList.Any())
@@ -101,7 +215,7 @@ namespace EntityFramework.DynamicFilters
             var baseCLRType = clrType.BaseType;
             if (baseCLRType.FullName == "System.Object")
                 return;     //  No base
-            
+
             //  Find the EntitySet for the base type (if there is one)
             var baseEntitySet = entityContainer.EntitySets
                 .Where(e => e.ElementType.MetadataProperties.Any(mp => mp.Name.Contains("customannotation:" + DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX)
@@ -121,6 +235,7 @@ namespace EntityFramework.DynamicFilters
             //  Check base classes of baseCLRType
             RemoveFiltersForBaseClass(baseCLRType, filterList, entityContainer);
         }
+#endif
 
         private DbFilterExpression BuildFilterExpressionWithDynamicFilters(string entityName, IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
         {
@@ -144,9 +259,13 @@ namespace EntityFramework.DynamicFilters
                 if (!string.IsNullOrEmpty(filter.ColumnName))
                 {
                     //  Single column equality filter
+#if USE_CSPACE
+                    var edmProp = edmType.Properties.FirstOrDefault(p => p.Name == filter.ColumnName);
+#else
                     //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
                     //  It may be different from the entity property!
                     var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(filter.ColumnName))).FirstOrDefault();
+#endif
                     if (edmProp == null)
                         continue;       //  ???
                     //  database column name is now in edmProp.Name.  Use that instead of filter.ColumnName
@@ -154,6 +273,11 @@ namespace EntityFramework.DynamicFilters
                     var columnProperty = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(binding.VariableType, binding.VariableName), edmProp.Name);
                     var param = columnProperty.Property.TypeUsage.Parameter(filter.CreateDynamicFilterName(filter.ColumnName));
 
+#if USE_CSPACE
+                    dbExpression = DbExpressionBuilder.Equal(columnProperty, param);
+#else
+                    //  When using SSpace, need some special handling for an Oracle Boolean property.
+                    //  Not necessary when using CSpace since the translation into the Oracle types has not happened yet.
                     if ((columnProperty.ResultType.EdmType.FullName == "Edm.Boolean") 
                         && param.ResultType.EdmType.FullName.StartsWith("Oracle", StringComparison.CurrentCultureIgnoreCase) && (param.ResultType.EdmType.Name == "number"))    //  Don't trust Oracle's type name to stay the same...
                     {
@@ -167,6 +291,7 @@ namespace EntityFramework.DynamicFilters
                     }
                     else
                         dbExpression = DbExpressionBuilder.Equal(columnProperty, param);
+#endif
                 }
                 else if (filter.Predicate != null)
                 {
@@ -216,5 +341,90 @@ namespace EntityFramework.DynamicFilters
 
             return DbExpressionBuilder.Filter(binding, newPredicate);
         }
+
+#region Extra (currently not needed) Visit calls - for debugging
+
+#if DEBUG_VISITS
+
+        public override DbExpression Visit(DbVariableReferenceExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbVariableReferenceExpression): VariableName={0}, ResultType.EdmType.Name={1}", expression.VariableName, expression.ResultType.EdmType.Name);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbApplyExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbApplyExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbCrossJoinExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbCrossJoinExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbJoinExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbJoinExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbLambdaExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbLambdaExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbNewInstanceExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbNewInstanceExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbParameterReferenceExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbParameterReferenceExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbProjectExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbProjectExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbRelationshipNavigationExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbRelationshipNavigationExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbDerefExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbDerefExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbElementExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbElementExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbEntityRefExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbEntityRefExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbRefExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbRefExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+        public override DbExpression Visit(DbRefKeyExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbRefKeyExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+#endif
+
+#endregion
     }
 }

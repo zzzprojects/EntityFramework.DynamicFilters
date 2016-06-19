@@ -9,8 +9,14 @@ namespace EntityFramework.DynamicFilters
     {
         public void TreeCreated(DbCommandTreeInterceptionContext interceptionContext)
         {
+#if USE_CSPACE
+            //  Intercepting CSpace instead of SSpace gives us access to all of the navigation properties
+            //  so we are able to handle filters on them as well!
+            if (interceptionContext.OriginalResult.DataSpace == DataSpace.CSpace)
+#else
             if (interceptionContext.OriginalResult.DataSpace == DataSpace.SSpace)
-            {
+#endif
+                {
                 var queryCommand = interceptionContext.Result as DbQueryCommandTree;
                 if (queryCommand != null)
                 {

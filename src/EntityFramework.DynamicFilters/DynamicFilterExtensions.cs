@@ -675,7 +675,7 @@ namespace EntityFramework.DynamicFilters
                         RemoveFilterDisabledConditionFromQuery(command, param);
 
 #if (DEBUG)
-                        if (!string.IsNullOrEmpty(command.CommandText) && command.CommandText.Contains(param.ParameterName))
+                        if (!string.IsNullOrEmpty(command.CommandText) && command.CommandText.ToLower().Contains(param.ParameterName + " is not null"))
                             throw new ApplicationException(string.Format("CommandText still contains ParameterName {0} after RemoveFilterDisabledConditionFromQuery", param.ParameterName));
 #endif
                     }
@@ -707,7 +707,9 @@ namespace EntityFramework.DynamicFilters
 
             //  Parameter may appear multiple times so need to loop until we do not find it any more
             int paramIdx;
-            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName)) != -1)
+            //  Must include the "IS NOT NULL" part here.  When switched to using CSpace, the SQL was slightly different
+            //  and found a case (covered by test case "AccountAndBlogEntries") where an embedded select was returning these parameters!
+            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", StringComparison.CurrentCultureIgnoreCase)) != -1)
             {
                 int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
                 int endIdx = command.CommandText.IndexOf(")", paramIdx);

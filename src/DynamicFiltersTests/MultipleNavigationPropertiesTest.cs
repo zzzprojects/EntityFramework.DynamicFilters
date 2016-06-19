@@ -15,7 +15,11 @@ namespace DynamicFiltersTests
     {
 
         [TestMethod]
+#if USE_CSPACE
+        public void KNOWN_ISSUE_MultipleNavigationProperties_IsDeletedFilterEnabled()
+#else
         public void MultipleNavigationProperties_IsDeletedFilterEnabled()
+#endif
         {
             using (var context = new TestContext())
             {
@@ -34,7 +38,11 @@ namespace DynamicFiltersTests
         }
 
         [TestMethod]
+#if USE_CSPACE
+        public void KNOWN_ISSUE_MultipleNavigationProperties_IsDeletedFilterDisabled()
+#else
         public void MultipleNavigationProperties_IsDeletedFilterDisabled()
+#endif
         {
             using (var context = new TestContext())
             {
@@ -109,6 +117,4 @@ namespace DynamicFiltersTests
 
         #endregion
     }
-
-
 }

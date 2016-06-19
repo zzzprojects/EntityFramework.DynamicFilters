@@ -1,6 +1,6 @@
-﻿//#if (DEBUG)
-//#define DEBUGPRINT
-//#endif
+﻿#if DEBUG
+#define DEBUG_VISITS
+#endif
 
 using System;
 using System.Collections;
@@ -65,7 +65,7 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitBinary: {0}", node);
 #endif
 
@@ -178,7 +178,7 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitConstant: {0}", node);
 #endif
 
@@ -213,7 +213,14 @@ namespace EntityFramework.DynamicFilters
             else if (type == typeof(Int32))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?)node.Value));
             else if (type.IsEnum)
+            {
+#if USE_CSPACE
+                var typeUsage = TypeUsageForPrimitiveType(node.Type);
+                MapExpressionToDbExpression(expression, DbExpressionBuilder.Constant(typeUsage, node.Value));
+#else
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32)node.Value));
+#endif
+            }
             else if (type == typeof(Int64))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?)node.Value));
             else if (type == typeof(float))
@@ -234,7 +241,7 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         protected override Expression VisitMember(MemberExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitMember: {0}, expression.NodeType={1}, Member={2}", node, node.Expression.NodeType, node.Member);
 #endif
 
@@ -264,18 +271,23 @@ namespace EntityFramework.DynamicFilters
 
                     //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
                     //  It may be different from the entity property!
+#if USE_CSPACE
+                    var edmProp = edmType.Members.FirstOrDefault(m => m.Name == propertyName);
+#else
                     var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(propertyName))).FirstOrDefault();
+#endif
                     if (edmProp == null)
                     {
-                        //  Accessing properties outside the main entity is not supported and will cause this exception.
+                        //  If using SSpace: Accessing properties outside the main entity is not supported and will cause this exception.
+                        //  If using CSpace: Navigation properties are handled (and will be found above)
                         throw new ApplicationException(string.Format("Property {0} not found in Entity Type {1}", propertyName, expression.Expression.Type.Name));
                     }
-                    //  database column name is now in edmProp.Name.  Use that instead of filter.ColumnName
 
+                    //  If edmProp is a navigation property (only available when using CSpace), EF will automatically add the join to it when it sees we are referencing this property.
                     propertyExpression = DbExpressionBuilder.Property(DbExpressionBuilder.Variable(_Binding.VariableType, _Binding.VariableName), edmProp.Name);
                     _Properties.Add(propertyName, propertyExpression);
 
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
                     System.Diagnostics.Debug.Print("Created new property expression for {0}", propertyName);
 #endif
                 }
@@ -290,18 +302,27 @@ namespace EntityFramework.DynamicFilters
             var objectExpression = GetDbExpressionForExpression(expression.Expression);
 
             DbExpression dbExpression;
-            switch(expression.Member.Name)
+            var isNullableType = IsNullableType(expression.Expression.Type);
+            int? dummy;
+            if (isNullableType && (expression.Member.Name == nameof(dummy.HasValue)))
             {
-                case "HasValue":
-                    //  Map HasValue to !IsNull
-                    dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(objectExpression));
-                    break;
-                case "Value":
-                    //  This is a nullable Value accessor so just map to the object itself and it will be mapped for us
-                    dbExpression = objectExpression;
-                    break;
-                default:
-                    throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
+                //  Map HasValue to !IsNull
+                dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.IsNull(objectExpression));
+            }
+            else if (isNullableType && (expression.Member.Name == nameof(dummy.Value)))
+            {
+                //  This is a nullable Value accessor so just map to the object itself and it will be mapped for us
+                dbExpression = objectExpression;
+            }
+            else
+            {
+#if USE_CSPACE
+                //  When using CSpace, we can map a property to the class member and EF will figure out the relationship for us.
+                dbExpression = DbExpressionBuilder.Property(objectExpression, expression.Member.Name);
+#else
+                //  When using SSpace, we cannot access class members
+                throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
+#endif
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
@@ -317,7 +338,7 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         protected override Expression VisitParameter(ParameterExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitParameter: {0}", node);
 #endif
 
@@ -346,7 +367,7 @@ namespace EntityFramework.DynamicFilters
             string dynFilterParamName = _Filter.CreateDynamicFilterName(name);
             param = typeUsage.Parameter(dynFilterParamName);
 
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("Created new parameter for {0}: {1}", name, dynFilterParamName);
 #endif
 
@@ -357,7 +378,7 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitUnary(UnaryExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitUnary: {0}", node);
 #endif
 
@@ -393,7 +414,7 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitConditional(ConditionalExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitConditional: {0}", node);
 #endif
 
@@ -403,13 +424,13 @@ namespace EntityFramework.DynamicFilters
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-#if (DEBUGPRINT)
+#if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitMethodCall: {0}", node);
 #endif
 
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
-            switch(node.Method.Name)
+            switch (node.Method.Name)
             {
                 case "Contains":
                     MapContainsExpression(expression);
@@ -569,11 +590,17 @@ namespace EntityFramework.DynamicFilters
             if (value == null)
                 throw new ApplicationException("null is not convertable to a DbConstantExpression");
 
-            //  Must map Enums to an int or EF/SQL will not know what to do with them.
+#if USE_CSPACE
+            //  Must create the constant using a TypeUsage to handle Enum types.
+            var typeUsage = TypeUsageForPrimitiveType(value.GetType());
+            return DbExpressionBuilder.Constant(typeUsage, value);
+#else
+             //  Must map Enums to an int or EF/SQL will not know what to do with them.
             if (value.GetType().IsEnum)
                 return DbExpressionBuilder.Constant((int)value);
 
             return DbExpressionBuilder.Constant(value);
+#endif
         }
 
         #endregion
@@ -615,13 +642,33 @@ namespace EntityFramework.DynamicFilters
 
             //  Find equivalent EdmType in CSpace.  This is a 1-to-1 mapping to CLR types except for the Geometry/Geography types
             //  (so not supporting those atm).
+            EdmType edmType;
+#if USE_CSPACE
+            if (type.IsEnum)
+            {
+                edmType = objectContext.MetadataWorkspace.GetItems<EnumType>(DataSpace.CSpace).FirstOrDefault(e => e.MetadataProperties.Any(m => m.Name.EndsWith(":ClrType") && (Type)m.Value == type));
+                if (edmType == null)
+                    throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage", type.FullName));
+            }
+            else
+            {
+                var primitiveTypeList = objectContext.MetadataWorkspace
+                    .GetPrimitiveTypes(DataSpace.CSpace)
+                    .Where(p => p.ClrEquivalentType == type)
+                    .ToList();
+                if (primitiveTypeList.Count != 1)
+                    throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage.  Found {1} matching types", type.Name, primitiveTypeList.Count));
+                edmType = primitiveTypeList.FirstOrDefault();
+            }
+#else
             var primitiveTypeList = objectContext.MetadataWorkspace
                 .GetPrimitiveTypes(DataSpace.CSpace)
                 .Where(p => p.ClrEquivalentType == type)
                 .ToList();
             if (primitiveTypeList.Count != 1)
                 throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage.  Found {1} matching types", type.Name, primitiveTypeList.Count));
-            var primitiveType = primitiveTypeList.FirstOrDefault();
+            edmType = primitiveTypeList.FirstOrDefault();
+#endif
 
             var facetList = new List<Facet>();
             if (isNullable)
@@ -638,7 +685,7 @@ namespace EntityFramework.DynamicFilters
                     facetList.Add((Facet)createMethod.Invoke(null, new object[] { facetDescription, null }));
             }
 
-            return TypeUsage.Create(primitiveType, facetList);
+            return TypeUsage.Create(edmType, facetList);
         }
 
         /// <summary>
@@ -648,8 +695,10 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         private static Type PrimitiveTypeForType(Type type)
         {
+#if !USE_CSPACE
             if (type.IsEnum)
                 type = typeof(Int32);
+#endif
 
             if (type.IsGenericType)
             {

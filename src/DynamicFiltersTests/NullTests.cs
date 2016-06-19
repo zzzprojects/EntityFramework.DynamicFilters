@@ -134,6 +134,16 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void NullableType_NotNullableValueProperty()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityJSet.ToList();
+                Assert.IsTrue((list.Count == 2) && (list.All(j => (j.ID == 1) || (j.ID == 2))));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -181,6 +191,11 @@ namespace DynamicFiltersTests
         public class EntityI : EntityBase
         { }
 
+        public class EntityJ : EntityBase
+        {
+            public int Value { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -196,6 +211,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityG> EntityGSet { get; set; }
             public DbSet<EntityH> EntityHSet { get; set; }
             public DbSet<EntityI> EntityISet { get; set; }
+            public DbSet<EntityJ> EntityJSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -233,6 +249,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityHFilter", (EntityH h, int tenantID) => (int)h.TenantID == tenantID, () => 1);
 
                 modelBuilder.Filter("EntityIFilter", (EntityI i) => i.TenantID == null);
+
+                modelBuilder.Filter("EntityJFilter", (EntityJ j) => j.Value <= 2);
             }
 
             public override void Seed()
@@ -268,6 +286,11 @@ namespace DynamicFiltersTests
                 EntityISet.Add(new EntityI { ID = 1, TenantID = 1 });
                 EntityISet.Add(new EntityI { ID = 2, TenantID = 2 });
                 EntityISet.Add(new EntityI { ID = 3, TenantID = null });
+
+                EntityJSet.Add(new EntityJ { ID = 1, Value = 1 });
+                EntityJSet.Add(new EntityJ { ID = 2, Value = 2 });
+                EntityJSet.Add(new EntityJ { ID = 3, Value = 3 });
+                EntityJSet.Add(new EntityJ { ID = 4, Value = 4 });
 
                 SaveChanges();
             }
