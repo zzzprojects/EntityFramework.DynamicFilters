@@ -126,35 +126,53 @@ namespace EntityFramework.DynamicFilters
                     }
                     else if (baseResult.ResultType.EdmType.BuiltInTypeKind == BuiltInTypeKind.EntityType)
                     {
-                        //  This is not supported because could not figure out how to make a binding against the single property.
-                        //  Need to somehow project it into a collection.  But everything I tried just kept complaining 
-                        //  about the property not being a collection!
-                        //  The attempt below creates a Scan of the entity and does add the filter into it.  But then could
-                        //  not figure out how to properly return that expression such that the NaviationProperty/Join
-                        //  gets wired up correctly.  The return from this method (in this case) *MUST* be a single entity.
-                        //  So may need to try to figure out how to get the correct join conditions from the NavigationProperty,
-                        //  apply those conditions (or maybe create a DbJoinExpression from them), and then use Element() to
-                        //  return a single object.
-                        //  Note that EF itself DOES NOT SUPPORT THIS EITHER!
-                        //  Failing test cases have names starting with: KNOWN_ISSUE
-                        throw new ApplicationException("Filters on single/non-collection navigation properties are not allowed");
-
-                        /*
-                        var navProp = expression.Property as NavigationProperty;
-
-                        var entityType = ((NavigationProperty)expression.Property).ToEndMember.GetEntityType();
                         var entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.Name);
                         var scanExpr = DbExpressionBuilder.Scan(entitySet);
                         var binding = DbExpressionBuilder.Bind(scanExpr);
 
-                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
+                        //  Build the join conditions that are needed to join from the source object (basePropertyResult.Instance)
+                        //  to the child object (the scan expression we just creating the binding for).
+                        //  These conditions will be and'd with the filter conditions.
+                        var associationType = navProp.RelationshipType as AssociationType;
+                        if (associationType == null)
+                            throw new ApplicationException(string.Format("Unable to find AssociationType on navigation property of single child property {0} in type {1}", navProp.Name, navProp.DeclaringType.FullName));
+                        if (associationType.Constraint == null)
+                        {
+                            //  KNOWN_ISSUE:
+                            //  If this happens, the model does not contain the foreign key (the "id" property).  EF will automatically generate
+                            //  it based on naming rules when generating the SSpace/database models but does not expose the Constraint here in the
+                            //  AssociationType.  In order for us to be able to generate the conditions correctly, those Foreign Keys need to be
+                            //  specified on the model.  To fix/handle this, we would need to examine the SSpace Association Sets (which do have
+                            //  these relations!!) to try to map that information back to CSpace to figure out the correct properties of the FK conditions.
+                            //  or...the models just need to contain the necessary "ID" properties for the FK relations so that they are available here
+                            //  (in CSpace) for us to generate the necessary join conditions.
+                            throw new ApplicationException(string.Format("FK Constriant not found for association '{0}' - must directly specify foreign keys on model to be able to apply this filter", associationType.FullName));
+                        }
+
+                        //  Figure out if the "baseResults" are the from side or to side of the constraint so we can create the properties correctly
+                        bool baseResultIsFromRole = (basePropertyResult.Instance.ResultType.EdmType == ((AssociationEndMember)associationType.Constraint.FromRole).GetEntityType());
+
+                        DbExpression joinCondition = null;
+                        for (int i = 0; i < associationType.Constraint.FromProperties.Count; i++)
+                        {
+                            var prop1 = DbExpressionBuilder.Property(basePropertyResult.Instance, baseResultIsFromRole ? associationType.Constraint.FromProperties[i] : associationType.Constraint.ToProperties[i]);
+                            var prop2 = DbExpressionBuilder.Property(binding.Variable, baseResultIsFromRole ? associationType.Constraint.ToProperties[i] : associationType.Constraint.FromProperties[i]);
+
+                            var condition = prop1.Equal(prop2) as DbExpression;
+                            joinCondition = (joinCondition == null) ? condition : joinCondition.And(condition);
+                        }
+
+                        //  Translate the filter predicate into a DbExpression bound to the Scan expression of the target entity set.
+                        //  Those conditions are then and'd with the join conditions necessary to join the target table with the source table.
+                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, joinCondition);
                         if (newFilterExpression != null)
                         {
-                            //  If not null, a new DbFilterExpression has been created with our dynamic filters.
-                            return navExpression;
-                            //return newFilterExpression.Element();     //  returns 1 item like we need but does not include the join conditions
+                            //  Converts the collection results into a single row.  The expected output is a single item so EF will
+                            //  then populate the results of that query into the property in the model.
+                            //  The resulting SQL will be a normal "left outer join" just as it would normally be except that our
+                            //  filter predicate conditions will be included with the normal join conditions.
+                            return newFilterExpression.Element();
                         }
-                        */
                     }
                 }
             }

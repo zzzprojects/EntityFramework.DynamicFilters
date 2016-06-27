@@ -15,11 +15,7 @@ namespace DynamicFiltersTests
     {
 
         [TestMethod]
-#if USE_CSPACE
-        public void KNOWN_ISSUE_MultipleNavigationProperties_IsDeletedFilterEnabled()
-#else
         public void MultipleNavigationProperties_IsDeletedFilterEnabled()
-#endif
         {
             using (var context = new TestContext())
             {
@@ -38,11 +34,7 @@ namespace DynamicFiltersTests
         }
 
         [TestMethod]
-#if USE_CSPACE
-        public void KNOWN_ISSUE_MultipleNavigationProperties_IsDeletedFilterDisabled()
-#else
         public void MultipleNavigationProperties_IsDeletedFilterDisabled()
-#endif
         {
             using (var context = new TestContext())
             {
@@ -70,8 +62,14 @@ namespace DynamicFiltersTests
             [DatabaseGenerated(DatabaseGeneratedOption.None)]
             public int Id { get; set; }
             public bool IsDeleted { get; set; }
+
+            public int? Nav1ID { get; set; }        //  Must specify FK property for dynamic filter to work
             public EntityB Nav1 { get; set; }
+
+            public int? Nav2ID { get; set; }        //  Must specify FK property for dynamic filter to work
             public EntityB Nav2 { get; set; }
+
+            public int? Nav3ID { get; set; }        //  Must specify FK property for dynamic filter to work
             public EntityA Nav3 { get; set; }
         }
 

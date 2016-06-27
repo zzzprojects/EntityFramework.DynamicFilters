@@ -36,17 +36,37 @@ namespace DynamicFiltersTests
         }
 
         [TestMethod]
-        public void KNOWN_ISSUE_NavigationProperty_FilterIncludedChildProperty()
+        public void NavigationProperty_FilterIncludedChildProperty()
         {
             using (var context = new TestContext())
             {
                 var list = context.EntityCSet.Include(c => c.Child).ToList();
 
-                throw new NotImplementedException();        //  TODO: Figure out correct return conditions once this case actually works
-                //Assert.IsTrue((list.Count == 2) && list.All(i => (i.ID == 1) || (i.ID == 2)));
+                Assert.IsTrue(list.Count == 5);
+                var itemsWithChild = list.Where(i => i.Child != null).ToList();
+                Assert.IsTrue((itemsWithChild.Count == 2) && itemsWithChild.All(i => (i.ID == 1) || (i.ID == 2)));
             }
         }
 
+        /// <summary>
+        /// KNOWN_ISSUE!
+        /// This test is the same as the EntityC test: NavigationProperty_FilterIncludedChildProperty.
+        /// Except that the main model does not define a FK property for the child.
+        /// See DynamicFilterQueryVisitor.Visit(DbPropertyExpression expression) for details.
+        /// This test is expected to fail unless we can find a way to figure out the FKs so that we can
+        /// create the join to the child table and include the filter conditions.
+        /// </summary>
+        [TestMethod]
+        public void KNOWN_ISSUE_NavigationProperty_NoFKsFilterIncludedChildProperty()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityDSet.Include(d => d.Child).ToList();
+
+                var itemsWithChild = list.Where(i => i.Child != null).ToList();
+                Assert.IsTrue((itemsWithChild.Count == 2) && itemsWithChild.All(i => (i.ID == 1) || (i.ID == 2)));
+            }
+        }
 
         #region Models
 
@@ -82,11 +102,21 @@ namespace DynamicFiltersTests
 
         public class EntityC : EntityBase
         {
-            public int? ChildID { get; set; }
+            public int ChildID { get; set; }
             public EntityCChild Child { get; set; }
         }
 
         public class EntityCChild : EntityBase
+        {
+            public int ChildValue { get; set; }
+        }
+
+        public class EntityD : EntityBase
+        {
+            public EntityDChild Child { get; set; }
+        }
+
+        public class EntityDChild : EntityBase
         {
             public int ChildValue { get; set; }
         }
@@ -103,6 +133,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityBChild> EntityBChildSet { get; set; }
             public DbSet<EntityC> EntityCSet { get; set; }
             public DbSet<EntityCChild> EntityCChildSet { get; set; }
+            public DbSet<EntityD> EntityDSet { get; set; }
+            public DbSet<EntityDChild> EntityDChildSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -111,6 +143,7 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityAFilter", (EntityA a) => a.Child.Value <= 2);
                 modelBuilder.Filter("EntityBFilter", (EntityBChild b) => b.ChildValue <= 2);
                 modelBuilder.Filter("EntityCChildFilter", (EntityCChild c) => c.ChildValue <= 2);
+                modelBuilder.Filter("EntityDChildFilter", (EntityDChild c) => c.ChildValue <= 2);
             }
 
             public override void Seed()
@@ -119,6 +152,7 @@ namespace DynamicFiltersTests
                 {
                     EntityASet.Add(new EntityA { ID = i, Child = new EntityAChild { ID = i, Value = i } });
                     EntityCSet.Add(new EntityC { ID = i, Child = new EntityCChild { ID = i, ChildValue = i } });
+                    EntityDSet.Add(new EntityD { ID = i, Child = new EntityDChild { ID = i, ChildValue = i } });
                 }
 
                 EntityBSet.Add(new EntityB
