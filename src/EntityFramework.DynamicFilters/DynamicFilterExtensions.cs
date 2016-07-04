@@ -136,6 +136,13 @@ namespace EntityFramework.DynamicFilters
             modelBuilder.Filter(filterName, path, (object)globalFuncValue);
         }
 
+        public static void Filter<TEntity, TProperty, TContext>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, TProperty>> path, Func<TContext, object> globalFuncValue)
+            where TEntity : class
+            where TContext : DbContext
+        {
+            modelBuilder.Filter(filterName, path, (object)globalFuncValue);
+        }
+
         public static void Filter<TEntity, TProperty>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, TProperty>> path, object globalValue = null)
         {
             InitializeDynamicFilters(null);
@@ -168,6 +175,13 @@ namespace EntityFramework.DynamicFilters
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
         }
 
+        public static void Filter<TEntity, TContext, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, Func<TContext, T0> value0)
+            where TEntity : class
+            where TContext : DbContext
+        {
+            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
+        }
+
         public static void Filter<TEntity, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, T0 value0)
             where TEntity : class
         {
@@ -177,6 +191,14 @@ namespace EntityFramework.DynamicFilters
         public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
                                                     Func<T0> value0, Func<T1> value1)
             where TEntity : class
+        {
+            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
+        }
+
+        public static void Filter<TEntity, TContext, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
+                                                    Func<TContext, T0> value0, Func<TContext, T1> value1)
+            where TEntity : class
+            where TContext : DbContext
         {
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
         }
@@ -195,6 +217,14 @@ namespace EntityFramework.DynamicFilters
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
         }
 
+        public static void Filter<TEntity, TContext, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
+                                                        Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2)
+            where TEntity : class
+            where TContext : DbContext
+        {
+            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
+        }
+
         public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
                                                         T0 value0, T1 value1, T2 value2)
             where TEntity : class
@@ -209,6 +239,14 @@ namespace EntityFramework.DynamicFilters
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
         }
 
+        public static void Filter<TEntity, TContext, T0, T1, T2, T3>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, bool>> predicate,
+                                                            Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3)
+            where TEntity : class
+            where TContext : DbContext
+        {
+            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
+        }
+
         public static void Filter<TEntity, T0, T1, T2, T3>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, bool>> predicate,
                                                             T0 value0, T1 value1, T2 value2, T3 value3)
             where TEntity : class
@@ -219,6 +257,14 @@ namespace EntityFramework.DynamicFilters
         public static void Filter<TEntity, T0, T1, T2, T3, T4>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, T4, bool>> predicate,
                                                                 Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<T3> value3, Func<T4> value4)
             where TEntity : class
+        {
+            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
+        }
+
+        public static void Filter<TEntity, TContext, T0, T1, T2, T3, T4>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, T4, bool>> predicate,
+                                                                Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3, Func<TContext, T4> value4)
+            where TEntity : class
+            where TContext : DbContext
         {
             Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
         }
@@ -416,6 +462,20 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="context"></param>
         /// <param name="filterName"></param>
+        /// <param name="func">A delegate that returns the value of the parameter.  This will be evaluated each time
+        /// the parameter value is needed.</param>
+        public static void SetFilterScopedParameterValue<TContext>(this DbContext context, string filterName, Func<TContext, object> func)
+            where TContext : DbContext
+        {
+            context.SetFilterScopedParameterValue(filterName, null, (object)func);
+        }
+
+        /// <summary>
+        /// Set the parameter for a filter within the current DbContext scope.  Once the DbContext is disposed, this
+        /// parameter will no longer be in scope and will be removed.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
         /// <param name="value"></param>
         public static void SetFilterScopedParameterValue(this DbContext context, string filterName, object value)
         {
@@ -431,6 +491,20 @@ namespace EntityFramework.DynamicFilters
         /// <param name="parameterName"></param>
         /// <param name="func"></param>
         public static void SetFilterScopedParameterValue(this DbContext context, string filterName, string parameterName, Func<object> func)
+        {
+            context.SetFilterScopedParameterValue(filterName, parameterName, (object)func);
+        }
+
+        /// <summary>
+        /// Set the parameter for a filter within the current DbContext scope.  Once the DbContext is disposed, this
+        /// parameter will no longer be in scope and will be removed.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
+        /// <param name="parameterName"></param>
+        /// <param name="func"></param>
+        public static void SetFilterScopedParameterValue<TContext>(this DbContext context, string filterName, string parameterName, Func<TContext, object> func)
+            where TContext : DbContext
         {
             context.SetFilterScopedParameterValue(filterName, parameterName, (object)func);
         }
@@ -484,6 +558,20 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="context"></param>
         /// <param name="filterName"></param>
+        /// <param name="func">A delegate that returns the value of the parameter.  This will be evaluated each time
+        /// the parameter value is needed.</param>
+        public static void SetFilterGlobalParameterValue<TContext>(this DbContext context, string filterName, Func<TContext, object> func)
+            where TContext : DbContext
+        {
+            context.SetFilterGlobalParameterValue(filterName, (object)func);
+        }
+
+        /// <summary>
+        /// Set the parameter value for a filter with global scope.  If a scoped parameter value is not found, this
+        /// value will be used.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
         /// <param name="value"></param>
         public static void SetFilterGlobalParameterValue(this DbContext context, string filterName, object value)
         {
@@ -491,6 +579,12 @@ namespace EntityFramework.DynamicFilters
         }
 
         public static void SetFilterGlobalParameterValue(this DbContext context, string filterName, string parameterName, Func<object> func)
+        {
+            context.SetFilterGlobalParameterValue(filterName, parameterName, (object)func);
+        }
+
+        public static void SetFilterGlobalParameterValue<TContext>(this DbContext context, string filterName, string parameterName, Func<TContext, object> func)
+            where TContext : DbContext
         {
             context.SetFilterGlobalParameterValue(filterName, parameterName, (object)func);
         }
@@ -570,10 +664,7 @@ namespace EntityFramework.DynamicFilters
                 if (contextFilters.TryGetValue(filterName, out filterParams))
                 {
                     if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
-                    {
-                        var func = value as Func<object>;
-                        return (func == null) ? value : func();
-                    }
+                        return EvaluateValue(value, context);
                 }
             }
 
@@ -581,14 +672,24 @@ namespace EntityFramework.DynamicFilters
             if (_GlobalParameterValues.TryGetValue(filterName, out filterParams))
             {
                 if (filterParams.ParameterValues.TryGetValue(parameterName, out value))
-                {
-                    var func = value as MulticastDelegate;
-                    return (func == null) ? value : func.DynamicInvoke();
-                }
+                    return EvaluateValue(value, context);
             }
 
             //  Not found anywhere???
             return null;
+        }
+
+        private static object EvaluateValue(object value, DbContext context)
+        {
+            var func = value as MulticastDelegate;
+            if (func == null)
+                return value;
+
+            var parameters = func.Method.GetParameters();
+            if (parameters.Any())
+                return func.DynamicInvoke(context);
+
+            return func.DynamicInvoke();
         }
 
         /// <summary>
