@@ -1,5 +1,5 @@
 ﻿#if DEBUG
-#define DEBUG_VISITS
+//#define DEBUG_VISITS
 #endif
 
 using System;

@@ -950,7 +950,12 @@ namespace EntityFramework.DynamicFilters
             {
                 int startIdx = FindLastComparisonOperator(command.CommandText, paramStartIdx, out isNotCondition);
                 if (startIdx == -1)
-                    throw new ApplicationException("Failed to find '=' or '<>' condition when trying to inject 'in' clause");
+                {
+                    //  EF sometimes includes our parameter values in sub-queries (as of the change to CSpace)!
+                    //  So if we don't find a valid comparison immediately before the parameter reference, just skip past it.
+                    prevStartIndex = paramStartIdx + param.ParameterName.Length;
+                    continue;
+                }
 
                 var inCondition = new StringBuilder();
                 if (isNotCondition)
@@ -990,7 +995,7 @@ namespace EntityFramework.DynamicFilters
                                                     inCondition,
                                                     command.CommandText.Substring(paramStartIdx + param.ParameterName.Length));
 
-                prevStartIndex = paramStartIdx + param.ParameterName.Length;
+                prevStartIndex = startIdx + inCondition.Length;
             }
         }
 
@@ -1000,11 +1005,11 @@ namespace EntityFramework.DynamicFilters
             //  possible for us to match on a condition that is earlier in the sql statement.
 
             //  MySql uses "!=" syntax.  Not possible to find both.
-            int notEqualIdx = commandText.LastIndexOf("!=", fromIdx);
+            int notEqualIdx = commandText.LastIndexOf("!=", fromIdx, 10);
             if (notEqualIdx == -1)
-                notEqualIdx = commandText.LastIndexOf("<>", fromIdx);
+                notEqualIdx = commandText.LastIndexOf("<>", fromIdx, 10);
 
-            int equalIdx = commandText.LastIndexOf("=", fromIdx);
+            int equalIdx = commandText.LastIndexOf("=", fromIdx, 10);
             if (equalIdx == notEqualIdx + 1)    //  Don't want to match on the "=" in "!="
                 equalIdx = -1;
 
