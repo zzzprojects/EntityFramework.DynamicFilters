@@ -840,6 +840,10 @@ namespace EntityFramework.DynamicFilters
                 if (filterNameAndParam == null)
                     continue;       //  Not dynamic filter param
 
+                //  Changing from SSpace -> CSpace also caused param.Value to be set to "null" instead of DBNull!
+                //  Must do this in case we don't set anything below (which will happen if param is an empty Enumerable).
+                param.Value = DBNull.Value;
+
                 object value = context.GetFilterParameterValue(filterNameAndParam.Item1, filterNameAndParam.Item2);
 
                 //  If not found, set to DBNull.  It should already be set to that, but it's not in Postgre and we get

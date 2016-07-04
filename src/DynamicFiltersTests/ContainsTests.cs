@@ -37,6 +37,17 @@ namespace DynamicFiltersTests
         }
 
         [TestMethod]
+        public void Contains_EmptyIntList()
+        {
+            using (var context = new TestContext())
+            {
+                context.SetFilterScopedParameterValue("EntityBFilter", "valueList", () => new List<int>());
+                var list = context.EntityBSet.ToList();
+                Assert.IsTrue(!list.Any());
+            }
+        }
+
+        [TestMethod]
         public void Contains_Not()
         {
             using (var context = new TestContext())
