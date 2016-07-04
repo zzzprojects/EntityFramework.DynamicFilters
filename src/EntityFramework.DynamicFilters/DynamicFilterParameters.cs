@@ -12,6 +12,13 @@ namespace EntityFramework.DynamicFilters
         //  override a filter that may be globally disabled.
         public bool? Enabled { get; set; }
 
+        /// <summary>
+        /// A delegate function that returns true/false to indicate if the filter is enabled.
+        /// Can (optionally) take a single parameter for the current DbContext instance.
+        /// Only evaluated if not null and if Enabled == true.
+        /// </summary>
+        public MulticastDelegate EnableIfCondition { get; set; }
+
         public ConcurrentDictionary<string, object> ParameterValues { get; private set; }
 
         public DynamicFilterParameters()

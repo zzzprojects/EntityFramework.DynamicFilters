@@ -302,8 +302,6 @@ namespace EntityFramework.DynamicFilters
 
         #region Enable/Disable filters
 
-        //  Setting a parameter to null will also disable that parameter
-
         /// <summary>
         /// Enable the filter.
         /// </summary>
@@ -318,6 +316,44 @@ namespace EntityFramework.DynamicFilters
 
             var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
             filterParams.Enabled = true;
+            filterParams.EnableIfCondition = null;
+        }
+
+        /// <summary>
+        /// Enable the filter if the condition evaluates to true
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
+        /// <param name="condition"></param>
+        public static void EnableFilter(this DbContext context, string filterName, Func<object> condition)
+        {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
+            context.Database.Initialize(false);
+
+            var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
+            filterParams.Enabled = true;
+            filterParams.EnableIfCondition = condition;
+        }
+
+        /// <summary>
+        /// Enable the filter if the condition evaluates to true
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="filterName"></param>
+        /// <param name="condition"></param>
+        public static void EnableFilter<TContext>(this DbContext context, string filterName, Func<TContext, object> condition)
+            where TContext : DbContext
+        {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
+            context.Database.Initialize(false);
+
+            var filterParams = GetOrCreateScopedFilterParameters(context, filterName);
+            filterParams.Enabled = true;
+            filterParams.EnableIfCondition = condition;
         }
 
         /// <summary>
@@ -364,6 +400,40 @@ namespace EntityFramework.DynamicFilters
                 if (AreFilterDisabledConditionsAllowed(filterName))
                     DisableFilter(context, filterName);
             }
+        }
+
+        public static void EnableFilter(this DbModelBuilder modelBuilder, string filterName, Func<bool> condition)
+        {
+            EnableFilterGloballyIf(modelBuilder, filterName, condition as MulticastDelegate);
+        }
+
+        public static void EnableFilter<TContext>(this DbModelBuilder modelBuilder, string filterName, Func<TContext, bool> condition)
+            where TContext : DbContext
+        {
+            EnableFilterGloballyIf(modelBuilder, filterName, condition as MulticastDelegate);
+        }
+
+        private static void EnableFilterGloballyIf(DbModelBuilder modelBuilder, string filterName, MulticastDelegate condition)
+        {
+            if (!AreFilterDisabledConditionsAllowed(filterName))
+                throw new ApplicationException("Enable/Disable filters conditions have been turned off via PreventDisabledFilterConditions!");
+
+            filterName = ScrubFilterName(filterName);
+
+            _GlobalParameterValues.AddOrUpdate(filterName,
+                (f) =>
+                {
+                    var newValues = new DynamicFilterParameters();
+                    newValues.Enabled = true;
+                    newValues.EnableIfCondition = condition;
+                    return newValues;
+                },
+                (f, currValues) =>
+                {
+                    currValues.Enabled = true;
+                    currValues.EnableIfCondition = condition;
+                    return currValues;
+                });
         }
 
         /// <summary>
@@ -713,7 +783,13 @@ namespace EntityFramework.DynamicFilters
                 if (contextFilters.TryGetValue(filterName, out filterParams))
                 {
                     if (filterParams.Enabled.HasValue)
+                    {
+                        //  If the filter is enabled and it has an EnableIfCondition, evaluate it and return that bool value.
+                        if (filterParams.Enabled.Value && (filterParams.EnableIfCondition != null))
+                            return (bool)EvaluateValue(filterParams.EnableIfCondition, context);
+
                         return filterParams.Enabled.Value;
+                    }
                 }
             }
 
@@ -721,7 +797,13 @@ namespace EntityFramework.DynamicFilters
             if (_GlobalParameterValues.TryGetValue(filterName, out filterParams))
             {
                 if (filterParams.Enabled.HasValue)
+                {
+                    //  If the filter is enabled and it has an EnableIfCondition, evaluate it and return that bool value.
+                    if (filterParams.Enabled.Value && (filterParams.EnableIfCondition != null))
+                        return (bool)EvaluateValue(filterParams.EnableIfCondition, context);
+
                     return filterParams.Enabled.Value;
+                }
             }
 
             //  Otherwise, default to true

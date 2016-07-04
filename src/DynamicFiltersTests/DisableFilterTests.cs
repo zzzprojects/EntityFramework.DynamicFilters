@@ -114,6 +114,83 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void DisableFilter_GloballyEnableByGenericCondition()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                //  Should be initially disabled by the condition
+                var list = context.EntityFSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+
+                //  Enable it and re-test
+                context.EnableFilter("EntityFFilter");
+                list = context.EntityFSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+            }
+        }
+
+        [TestMethod]
+        public void DisableFilter_GloballyEnableByContextCondition()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                context.FiltersAreEnabled = false;
+                var list = context.EntityGSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+
+                context.FiltersAreEnabled = true;
+                list = context.EntityGSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+
+                //  Disable it in the current scope 
+                context.DisableFilter("EntityGFilter");
+                list = context.EntityGSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+            }
+        }
+
+        [TestMethod]
+        public void DisableFilter_ScopedEnableByGenericCondition()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                //  Should be initially disabled globally
+                var list = context.EntityHSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+
+                //  Enable it with a condition and re-test
+                context.EnableFilter("EntityHFilter", () => true);
+                list = context.EntityHSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+            }
+        }
+
+        [TestMethod]
+        public void DisableFilter_ScopedEnableByContextCondition()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                //  Should be initially disabled globally
+                var list = context.EntityHSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+
+                //  Enable it with a condition and re-test
+                context.FiltersAreEnabled = true;
+                context.EnableFilter("EntityHFilter", (TestContext ctx) => ctx.FiltersAreEnabled);
+                list = context.EntityHSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+
+                context.FiltersAreEnabled = false;
+                list = context.EntityHSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -156,6 +233,30 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
         }
 
+        public class EntityF
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
+        public class EntityG
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
+        public class EntityH
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -167,6 +268,11 @@ namespace DynamicFiltersTests
             public DbSet<EntityC> EntityCSet { get; set; }
             public DbSet<EntityD> EntityDSet { get; set; }
             public DbSet<EntityE> EntityESet { get; set; }
+            public DbSet<EntityF> EntityFSet { get; set; }
+            public DbSet<EntityG> EntityGSet { get; set; }
+            public DbSet<EntityH> EntityHSet { get; set; }
+
+            public bool FiltersAreEnabled { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -186,6 +292,15 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityEFilter", (EntityE e, int value) => e.ID < value, () => 5);
                 modelBuilder.PreventDisabledFilterConditions("EntityEFilter");
+
+                modelBuilder.Filter("EntityFFilter", (EntityF f, int value) => f.ID < value, () => 5);
+                modelBuilder.EnableFilter("EntityFFilter", () => false);
+
+                modelBuilder.Filter("EntityGFilter", (EntityG g, int value) => g.ID < value, () => 5);
+                modelBuilder.EnableFilter("EntityGFilter", (TestContext ctx) => ctx.FiltersAreEnabled);
+
+                modelBuilder.Filter("EntityHFilter", (EntityH h, int value) => h.ID < value, () => 5);
+                modelBuilder.DisableFilterGlobally("EntityHFilter");
             }
 
             public override void Seed()
@@ -199,6 +314,9 @@ namespace DynamicFiltersTests
                     EntityCSet.Add(new EntityC { ID = i });
                     EntityDSet.Add(new EntityD { ID = i });
                     EntityESet.Add(new EntityE { ID = i });
+                    EntityFSet.Add(new EntityF { ID = i });
+                    EntityGSet.Add(new EntityG { ID = i });
+                    EntityHSet.Add(new EntityH { ID = i });
                 }
 
                 SaveChanges();
