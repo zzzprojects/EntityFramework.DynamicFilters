@@ -1086,12 +1086,12 @@ namespace EntityFramework.DynamicFilters
 
         #region Private Methods
 
-        private static bool IsOracle(DbContext context)
+        internal static bool IsOracle(this DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("Oracle");
         }
 
-        private static bool IsMySql(DbContext context)
+        internal static bool IsMySql(this DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("MySql");
         }

@@ -22,6 +22,7 @@ namespace EntityFramework.DynamicFilters
         private DynamicFilterDefinition _Filter;
         private DbExpressionBinding _Binding;
         private ObjectContext _ObjectContext;
+        private DataSpace _DataSpace;
 
         private Dictionary<Expression, DbExpression> _ExpressionToDbExpressionMap = new Dictionary<Expression, DbExpression>();
         private Dictionary<string, DbPropertyExpression> _Properties = new Dictionary<string, DbPropertyExpression>();
@@ -31,9 +32,9 @@ namespace EntityFramework.DynamicFilters
 
         #region Static methods & private Constructor
 
-        public static DbExpression Convert(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext)
+        public static DbExpression Convert(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext, DataSpace dataSpace)
         {
-            var visitor = new LambdaToDbExpressionVisitor(filter, binding, objectContext);
+            var visitor = new LambdaToDbExpressionVisitor(filter, binding, objectContext, dataSpace);
             var expression = visitor.Visit(filter.Predicate) as LambdaExpression;
 
             var dbExpression = visitor.GetDbExpressionForExpression(expression.Body);
@@ -52,11 +53,12 @@ namespace EntityFramework.DynamicFilters
             return dbExpression;
         }
 
-        private LambdaToDbExpressionVisitor(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext)
+        private LambdaToDbExpressionVisitor(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext, DataSpace dataSpace)
         {
             _Filter = filter;
             _Binding = binding;
             _ObjectContext = objectContext;
+            _DataSpace = dataSpace;
         }
 
         #endregion
@@ -214,12 +216,13 @@ namespace EntityFramework.DynamicFilters
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?)node.Value));
             else if (type.IsEnum)
             {
-#if USE_CSPACE
-                var typeUsage = TypeUsageForPrimitiveType(node.Type);
-                MapExpressionToDbExpression(expression, DbExpressionBuilder.Constant(typeUsage, node.Value));
-#else
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32)node.Value));
-#endif
+                if (_DataSpace == DataSpace.CSpace)
+                {
+                    var typeUsage = TypeUsageForPrimitiveType(node.Type);
+                    MapExpressionToDbExpression(expression, DbExpressionBuilder.Constant(typeUsage, node.Value));
+                }
+                else
+                    MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32)node.Value));
             }
             else if (type == typeof(Int64))
                 MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?)node.Value));
@@ -271,11 +274,12 @@ namespace EntityFramework.DynamicFilters
 
                     //  Need to map through the EdmType properties to find the actual database/cspace name for the entity property.
                     //  It may be different from the entity property!
-#if USE_CSPACE
-                    var edmProp = edmType.Members.FirstOrDefault(m => m.Name == propertyName);
-#else
-                    var edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(propertyName))).FirstOrDefault();
-#endif
+                    EdmMember edmProp;
+                    if (_DataSpace == DataSpace.CSpace)
+                        edmProp = edmType.Members.FirstOrDefault(m => m.Name == propertyName);
+                    else
+                        edmProp = edmType.Properties.Where(p => p.MetadataProperties.Any(m => m.Name == "PreferredName" && m.Value.Equals(propertyName))).FirstOrDefault();
+
                     if (edmProp == null)
                     {
                         //  If using SSpace: Accessing properties outside the main entity is not supported and will cause this exception.
@@ -316,13 +320,16 @@ namespace EntityFramework.DynamicFilters
             }
             else
             {
-#if USE_CSPACE
-                //  When using CSpace, we can map a property to the class member and EF will figure out the relationship for us.
-                dbExpression = DbExpressionBuilder.Property(objectExpression, expression.Member.Name);
-#else
-                //  When using SSpace, we cannot access class members
-                throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
-#endif
+                if (_DataSpace == DataSpace.CSpace)
+                {
+                    //  When using CSpace, we can map a property to the class member and EF will figure out the relationship for us.
+                    dbExpression = DbExpressionBuilder.Property(objectExpression, expression.Member.Name);
+                }
+                else
+                {
+                    //  When using SSpace, we cannot access class members
+                    throw new ApplicationException(string.Format("Unhandled property accessor in expression: {0}", expression));
+                }
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
@@ -364,7 +371,7 @@ namespace EntityFramework.DynamicFilters
                 return param;
 
             var typeUsage = TypeUsageForPrimitiveType(type);
-            string dynFilterParamName = _Filter.CreateDynamicFilterName(name);
+            string dynFilterParamName = _Filter.CreateDynamicFilterName(name, _DataSpace);
             param = typeUsage.Parameter(dynFilterParamName);
 
 #if (DEBUG_VISITS)
@@ -477,7 +484,7 @@ namespace EntityFramework.DynamicFilters
                 //  Parameter Reference is set to the first value in the collection and the rest of the values
                 //  are inserted into the SQL "in" clause.
                 string paramName = collectionObjExp.Name;
-                Type paramType = PrimitiveTypeForType(collectionObjExp.Type);
+                Type paramType = PrimitiveTypeForType(collectionObjExp.Type, _DataSpace);
 
                 var param = CreateParameter(paramName, paramType);
                 dbExpression = DbExpressionBuilder.Equal(argExpression, param);
@@ -590,17 +597,20 @@ namespace EntityFramework.DynamicFilters
             if (value == null)
                 throw new ApplicationException("null is not convertable to a DbConstantExpression");
 
-#if USE_CSPACE
-            //  Must create the constant using a TypeUsage to handle Enum types.
-            var typeUsage = TypeUsageForPrimitiveType(value.GetType());
-            return DbExpressionBuilder.Constant(typeUsage, value);
-#else
-             //  Must map Enums to an int or EF/SQL will not know what to do with them.
-            if (value.GetType().IsEnum)
-                return DbExpressionBuilder.Constant((int)value);
+            if (_DataSpace == DataSpace.CSpace)
+            {
+                //  Must create the constant using a TypeUsage to handle Enum types.
+                var typeUsage = TypeUsageForPrimitiveType(value.GetType());
+                return DbExpressionBuilder.Constant(typeUsage, value);
+            }
+            else
+            {
+                //  Must map Enums to an int or EF/SQL will not know what to do with them.
+                if (value.GetType().IsEnum)
+                    return DbExpressionBuilder.Constant((int)value);
 
-            return DbExpressionBuilder.Constant(value);
-#endif
+                return DbExpressionBuilder.Constant(value);
+            }
         }
 
         #endregion
@@ -618,7 +628,7 @@ namespace EntityFramework.DynamicFilters
             if (paramExpression != null)
             {
                 string paramName = paramExpression.Name;
-                Type paramType = PrimitiveTypeForType(paramExpression.Type);
+                Type paramType = PrimitiveTypeForType(paramExpression.Type, _DataSpace);
 
                 return CreateParameter(paramName, paramType);
             }
@@ -632,23 +642,35 @@ namespace EntityFramework.DynamicFilters
 
         private TypeUsage TypeUsageForPrimitiveType(Type type)
         {
-            return TypeUsageForPrimitiveType(type, _ObjectContext);
+            return TypeUsageForPrimitiveType(type, _ObjectContext, _DataSpace);
         }
 
-        public static TypeUsage TypeUsageForPrimitiveType(Type type, ObjectContext objectContext)
+        public static TypeUsage TypeUsageForPrimitiveType(Type type, ObjectContext objectContext, DataSpace dataSpace)
         {
             bool isNullable = IsNullableType(type);
-            type = PrimitiveTypeForType(type);
+            type = PrimitiveTypeForType(type, dataSpace);
 
             //  Find equivalent EdmType in CSpace.  This is a 1-to-1 mapping to CLR types except for the Geometry/Geography types
             //  (so not supporting those atm).
             EdmType edmType;
-#if USE_CSPACE
-            if (type.IsEnum)
+            if (dataSpace == DataSpace.CSpace)
             {
-                edmType = objectContext.MetadataWorkspace.GetItems<EnumType>(DataSpace.CSpace).FirstOrDefault(e => e.MetadataProperties.Any(m => m.Name.EndsWith(":ClrType") && (Type)m.Value == type));
-                if (edmType == null)
-                    throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage", type.FullName));
+                if (type.IsEnum)
+                {
+                    edmType = objectContext.MetadataWorkspace.GetItems<EnumType>(DataSpace.CSpace).FirstOrDefault(e => e.MetadataProperties.Any(m => m.Name.EndsWith(":ClrType") && (Type)m.Value == type));
+                    if (edmType == null)
+                        throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage", type.FullName));
+                }
+                else
+                {
+                    var primitiveTypeList = objectContext.MetadataWorkspace
+                        .GetPrimitiveTypes(DataSpace.CSpace)
+                        .Where(p => p.ClrEquivalentType == type)
+                        .ToList();
+                    if (primitiveTypeList.Count != 1)
+                        throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage.  Found {1} matching types", type.Name, primitiveTypeList.Count));
+                    edmType = primitiveTypeList.FirstOrDefault();
+                }
             }
             else
             {
@@ -660,15 +682,6 @@ namespace EntityFramework.DynamicFilters
                     throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage.  Found {1} matching types", type.Name, primitiveTypeList.Count));
                 edmType = primitiveTypeList.FirstOrDefault();
             }
-#else
-            var primitiveTypeList = objectContext.MetadataWorkspace
-                .GetPrimitiveTypes(DataSpace.CSpace)
-                .Where(p => p.ClrEquivalentType == type)
-                .ToList();
-            if (primitiveTypeList.Count != 1)
-                throw new ApplicationException(string.Format("Unable to map parameter of type {0} to TypeUsage.  Found {1} matching types", type.Name, primitiveTypeList.Count));
-            edmType = primitiveTypeList.FirstOrDefault();
-#endif
 
             var facetList = new List<Facet>();
             if (isNullable)
@@ -692,13 +705,15 @@ namespace EntityFramework.DynamicFilters
         /// Returns the primitive type of the Type.  If this is a collection type, this is the type of the objects inside the collection.
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="dataSpace"></param>
         /// <returns></returns>
-        private static Type PrimitiveTypeForType(Type type)
+        private static Type PrimitiveTypeForType(Type type, DataSpace dataSpace)
         {
-#if !USE_CSPACE
-            if (type.IsEnum)
-                type = typeof(Int32);
-#endif
+            if (dataSpace == DataSpace.SSpace)
+            {
+                if (type.IsEnum)
+                    type = typeof(Int32);
+            }
 
             if (type.IsGenericType)
             {
@@ -706,7 +721,17 @@ namespace EntityFramework.DynamicFilters
                 //  Generic Arguments.
                 var genericArgs = type.GetGenericArguments();
                 if ((genericArgs != null) && (genericArgs.Length == 1))
-                    return genericArgs[0];
+                {
+                    type = genericArgs[0];
+
+                    if (dataSpace == DataSpace.SSpace)
+                    {
+                        if (type.IsEnum)
+                            type = typeof(Int32);
+                    }
+
+                    return type;
+                }
             }
 
             if ((typeof(IEnumerable).IsAssignableFrom(type) && (type != typeof(String))) || (type == typeof(object)))

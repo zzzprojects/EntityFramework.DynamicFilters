@@ -61,7 +61,9 @@
     <Compile Include="DynamicFilterExtensions.cs" />
     <Compile Include="DynamicFilterInterceptor.cs" />
     <Compile Include="DynamicFilterParameters.cs" />
-    <Compile Include="DynamicFilterQueryVisitor.cs" />
+    <Compile Include="DynamicFilterQueryVisitorOld.cs" />
+    <Compile Include="DynamicFilterQueryVisitorSSpace.cs" />
+    <Compile Include="DynamicFilterQueryVisitorCSpace.cs" />
     <Compile Include="LambdaToDbExpressionVisitor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.Entity.Core.Metadata.Edm;
 using System.Linq.Expressions;
 
 namespace EntityFramework.DynamicFilters
@@ -36,12 +37,12 @@ namespace EntityFramework.DynamicFilters
         //  These methods handle mapping Filter/Parameter names into a DB friendly parameter name.  This is necessary
         //  because Oracle has a 30 character max identifier length!
 
-        private static Dictionary<Tuple<string, string>, int> _FilterParamToDBParamIndex = new Dictionary<Tuple<string, string>, int>();
-        private static Dictionary<int, Tuple<string, string>> _ParamIndexToFilterAndParam = new Dictionary<int, Tuple<string, string>>();
+        private static Dictionary<Tuple<string, string, DataSpace>, int> _FilterParamToDBParamIndex = new Dictionary<Tuple<string, string, DataSpace>, int>();
+        private static Dictionary<int, Tuple<string, string, DataSpace>> _ParamIndexToFilterAndParam = new Dictionary<int, Tuple<string, string, DataSpace>>();
 
-        public string CreateDynamicFilterName(string parameterName)
+        public string CreateDynamicFilterName(string parameterName, DataSpace dataSpace)
         {
-            var filterParamKey = Tuple.Create(FilterName, parameterName);
+            var filterParamKey = Tuple.Create(FilterName, parameterName, dataSpace);
 
             lock (_FilterParamToDBParamIndex)
             {
@@ -59,9 +60,9 @@ namespace EntityFramework.DynamicFilters
             }
         }
 
-        public string CreateFilterDisabledParameterName()
+        public string CreateFilterDisabledParameterName(DataSpace dataSpace)
         {
-            return CreateDynamicFilterName(DynamicFilterConstants.FILTER_DISABLED_NAME);
+            return CreateDynamicFilterName(DynamicFilterConstants.FILTER_DISABLED_NAME, dataSpace);
         }
 
         /// <summary>
@@ -69,7 +70,7 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="dbParameter"></param>
         /// <returns></returns>
-        public static Tuple<string,string> GetFilterAndParamFromDBParameter(string dbParameter)
+        public static Tuple<string, string, DataSpace> GetFilterAndParamFromDBParameter(string dbParameter)
         {
             if (!dbParameter.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
                 return null;    //  Not dynamic filter param
@@ -85,7 +86,7 @@ namespace EntityFramework.DynamicFilters
             if (!int.TryParse(parts[1], out dbParamIndex))
                 throw new ApplicationException(string.Format("Unable to parse {0} as int", parts[1]));
 
-            Tuple<string, string> filterParamKey;
+            Tuple<string, string, DataSpace> filterParamKey;
             if (!_ParamIndexToFilterAndParam.TryGetValue(dbParamIndex, out filterParamKey))
                 throw new ApplicationException(string.Format("Param {0} not found in _ParamIndexToFilterAndParam", dbParamIndex));
 
