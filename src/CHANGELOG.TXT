@@ -34,5 +34,5 @@
 1.4.10.2: Added methods to turn off the enable/disable filter functionality completely so those conditions are not included in sql query at all
 1.4.10.3: Fixed issues removing disabled filter condition on PostgreSQL
 1.4.11: Signed the assembly
-2.0.0-alpha: Support for filtering on Navigation Properties.  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65
-2.0.0-alpha3: Support filtering on single child properties (that have FKs defined in models).
+2.0.0: See https://github.com/jcachat/EntityFramework.DynamicFilters#changes-in-version-2 for changes.
+
