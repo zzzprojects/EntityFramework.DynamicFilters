@@ -16,12 +16,12 @@ namespace EntityFramework.DynamicFilters
 {
     public class DynamicFilterQueryVisitorOld : DefaultExpressionVisitor
     {
-        private readonly DbContext _ContextForInterception;
+        private readonly DbContext _DbContext;
         private readonly ObjectContext _ObjectContext;
 
         public DynamicFilterQueryVisitorOld(DbContext contextForInterception)
         {
-            _ContextForInterception = contextForInterception;
+            _DbContext = contextForInterception;
             _ObjectContext = ((IObjectContextAdapter)contextForInterception).ObjectContext;
         }
 
@@ -194,7 +194,7 @@ namespace EntityFramework.DynamicFilters
                 else if (filter.Predicate != null)
                 {
                     //  Lambda expression filter
-                    dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _ObjectContext, DataSpace.SSpace);
+                    dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _DbContext, DataSpace.SSpace);
                 }
                 else
                     throw new System.ArgumentException(string.Format("Filter {0} does not contain a ColumnName or a Predicate!", filter.FilterName));

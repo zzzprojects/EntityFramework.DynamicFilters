@@ -16,7 +16,7 @@ namespace EntityFramework.DynamicFilters
 {
     public class DynamicFilterQueryVisitorCSpace : DefaultExpressionVisitor
     {
-        private readonly DbContext _ContextForInterception;
+        private readonly DbContext _DbContext;
         private readonly ObjectContext _ObjectContext;
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace EntityFramework.DynamicFilters
 
         public DynamicFilterQueryVisitorCSpace(DbContext contextForInterception)
         {
-            _ContextForInterception = contextForInterception;
+            _DbContext = contextForInterception;
             _ObjectContext = ((IObjectContextAdapter)contextForInterception).ObjectContext;
         }
 
@@ -111,7 +111,7 @@ namespace EntityFramework.DynamicFilters
                     }
                     else if (baseResult.ResultType.EdmType.BuiltInTypeKind == BuiltInTypeKind.EntityType)
                     {
-                        if (DoesNotSupportElementMethod(_ContextForInterception))
+                        if (DoesNotSupportElementMethod(_DbContext))
                         {
                             //  Oracle and MySQL do not support the "newFilterExpression.Element()" method that we need to call 
                             //  at the end of this block.  Oracle *MAY* support it in a newer release but not sure
@@ -174,7 +174,7 @@ namespace EntityFramework.DynamicFilters
                             //  Unable to cast object of type 'MySql.Data.Entity.SelectStatement' to type 'MySql.Data.Entity.LiteralFragment'.
                             //  But don't do that unless necessary because it produces extra "outer apply" sub queries in MS SQL.
                             //  This trick does not work for Oracle...
-                            if (_ContextForInterception.IsMySql())
+                            if (_DbContext.IsMySql())
                                 return newFilterExpression.Limit(DbConstantExpression.FromInt32(1)).Element();
 
                             return newFilterExpression.Element();
@@ -245,7 +245,7 @@ namespace EntityFramework.DynamicFilters
                 else if (filter.Predicate != null)
                 {
                     //  Lambda expression filter
-                    dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _ObjectContext, DataSpace.CSpace);
+                    dbExpression = LambdaToDbExpressionVisitor.Convert(filter, binding, _DbContext, DataSpace.CSpace);
                 }
                 else
                     throw new System.ArgumentException(string.Format("Filter {0} does not contain a ColumnName or a Predicate!", filter.FilterName));

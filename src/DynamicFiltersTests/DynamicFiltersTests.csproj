@@ -90,6 +90,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AccountTests.cs" />
+    <Compile Include="ChildCollectionFiltersTests.cs" />
     <Compile Include="ContextFilterTests.cs" />
     <Compile Include="NavigationPropertyTests.cs" />
     <Compile Include="DBInitializeTests.cs" />

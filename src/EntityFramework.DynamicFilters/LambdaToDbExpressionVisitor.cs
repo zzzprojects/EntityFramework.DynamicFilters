@@ -5,10 +5,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Core.Common.CommandTrees;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Core.Objects;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -21,6 +23,7 @@ namespace EntityFramework.DynamicFilters
 
         private DynamicFilterDefinition _Filter;
         private DbExpressionBinding _Binding;
+        private DbContext _DbContext;
         private ObjectContext _ObjectContext;
         private DataSpace _DataSpace;
 
@@ -32,9 +35,9 @@ namespace EntityFramework.DynamicFilters
 
         #region Static methods & private Constructor
 
-        public static DbExpression Convert(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext, DataSpace dataSpace)
+        public static DbExpression Convert(DynamicFilterDefinition filter, DbExpressionBinding binding, DbContext dbContext, DataSpace dataSpace)
         {
-            var visitor = new LambdaToDbExpressionVisitor(filter, binding, objectContext, dataSpace);
+            var visitor = new LambdaToDbExpressionVisitor(filter, binding, dbContext, dataSpace);
             var expression = visitor.Visit(filter.Predicate) as LambdaExpression;
 
             var dbExpression = visitor.GetDbExpressionForExpression(expression.Body);
@@ -53,11 +56,12 @@ namespace EntityFramework.DynamicFilters
             return dbExpression;
         }
 
-        private LambdaToDbExpressionVisitor(DynamicFilterDefinition filter, DbExpressionBinding binding, ObjectContext objectContext, DataSpace dataSpace)
+        private LambdaToDbExpressionVisitor(DynamicFilterDefinition filter, DbExpressionBinding binding, DbContext dbContext, DataSpace dataSpace)
         {
             _Filter = filter;
             _Binding = binding;
-            _ObjectContext = objectContext;
+            _DbContext = dbContext;
+            _ObjectContext = ((IObjectContextAdapter)dbContext).ObjectContext;
             _DataSpace = dataSpace;
         }
 
@@ -435,15 +439,22 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("VisitMethodCall: {0}", node);
 #endif
 
-            var expression = base.VisitMethodCall(node) as MethodCallExpression;
-
+            //  Do not call base.VisitMethodCall(node) here because of the method that is being
+            //  called has a lambdas as an argument, we need to handle it differently.  If we call the base,
+            //  the visits that we do will be against the current binding - not the source of the method call.
+            //  So these "Map" methods are all responsible for calling the base if necessary.
+            Expression expression;
             switch (node.Method.Name)
             {
                 case "Contains":
-                    MapContainsExpression(expression);
+                    expression = MapContainsExpression(node);
                     break;
                 case "StartsWith":
-                    MapStartsWithExpression(expression);
+                    expression = MapStartsWithExpression(node);
+                    break;
+                case "Any":
+                case "All":
+                    expression = MapAnyOrAllExpression(node);
                     break;
                 default:
                     throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
@@ -451,9 +462,11 @@ namespace EntityFramework.DynamicFilters
 
             return expression;
         }
-
-        private void MapContainsExpression(MethodCallExpression expression)
+        
+        private Expression MapContainsExpression(MethodCallExpression node)
         {
+            var expression = base.VisitMethodCall(node) as MethodCallExpression;
+
             //  For some reason, if the list is IEnumerable and not the List class, the 
             //  list object (the ParameterExpression object) will be in Argument[0] and the param
             //  of the Contains() function will be in Argument[1].  And expression.object is null.
@@ -542,6 +555,7 @@ namespace EntityFramework.DynamicFilters
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
+            return expression;
         }
 
         /// <summary>
@@ -559,8 +573,10 @@ namespace EntityFramework.DynamicFilters
             return !entityConnection.StoreConnection.GetType().FullName.Contains("Oracle");
         }
 
-        private void MapStartsWithExpression(MethodCallExpression expression)
+        private Expression MapStartsWithExpression(MethodCallExpression node)
         {
+            var expression = base.VisitMethodCall(node) as MethodCallExpression;
+
             if ((expression.Arguments == null) || (expression.Arguments.Count != 1))
                 throw new ApplicationException("Did not find exactly 1 Argument to StartsWith function");
 
@@ -588,6 +604,57 @@ namespace EntityFramework.DynamicFilters
             }
 
             MapExpressionToDbExpression(expression, dbExpression);
+            return expression;
+        }
+
+        private Expression MapAnyOrAllExpression(MethodCallExpression node)
+        {
+            if (_DataSpace != DataSpace.CSpace)
+                throw new ApplicationException("Filters on child collections are only supported when using CSpace");
+
+            if ((node.Arguments == null) || (node.Arguments.Count > 2))
+                throw new ApplicationException("Any function call has more than 2 arguments");
+
+            //  Visit the first argument so that we can get the DbPropertyExpression which is the source of the method call.
+            var sourceExpression = Visit(node.Arguments[0]);
+            var collectionExpression = GetDbExpressionForExpression(sourceExpression);
+
+            //  Visit this DbExpression using the QueryVisitor in case it has it's own filters that need to be applied.
+            var queryVisitor = new DynamicFilterQueryVisitorCSpace(_DbContext);
+            collectionExpression = collectionExpression.Accept(queryVisitor);
+
+            DbExpression dbExpression;
+            if (node.Arguments.Count == 2)
+            {
+                //  The method call has a predicate that needs to be evaluated.  This must be done against the source
+                //  argument - not the current binding.
+                var binding = collectionExpression.Bind();
+
+                //  Visit the lambda expression against this binding (which will evaluate all of the
+                //  conditions in the expression against this binding and for this filter).
+                var lambdaExpression = node.Arguments[1] as LambdaExpression;
+                var visitor = new LambdaToDbExpressionVisitor(_Filter, binding, _DbContext, _DataSpace);
+                var subExpression = visitor.Visit(lambdaExpression) as LambdaExpression;
+                var subDbExpression = visitor.GetDbExpressionForExpression(subExpression.Body);
+
+                //  Create an "Any" or "All" DbExpression from the results
+                if (node.Method.Name == "All")
+                    dbExpression = DbExpressionBuilder.All(binding, subDbExpression);
+                else
+                    dbExpression = DbExpressionBuilder.Any(binding, subDbExpression);
+            }
+            else
+            {
+                //  This should not even be possible - linq/IEnumerable does not have such a method!
+                if (node.Method.Name == "All")
+                    throw new ApplicationException("All() with no parameters is not supported");
+
+                //  No predicate so just create an Any DbExpression against the collection expression
+                dbExpression = DbExpressionBuilder.Any(collectionExpression);
+            }
+
+            MapExpressionToDbExpression(node, dbExpression);
+            return node;
         }
 
         private DbConstantExpression CreateConstantExpression(object value)
