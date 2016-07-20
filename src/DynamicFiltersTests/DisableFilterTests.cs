@@ -191,6 +191,19 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void DisableFilter_ConditionallyApplyFilter()        //  Not actually a disable filter test, just didn't want to make a whole new test class
+        {
+            using (var context = new TestContext())
+            {
+                var list1 = context.EntityISet.ToList();
+                var list2 = context.EntityJSet.ToList();
+
+                Assert.IsTrue((list1.Count == 4) && list1.All(a => (a.ID < 5)));
+                Assert.IsTrue((list2.Count == 6) && list2.All(a => (a.ID >= 5)));
+            }
+        }
+
         #region Models
 
         public class EntityA
@@ -257,6 +270,31 @@ namespace DynamicFiltersTests
             public int ID { get; set; }
         }
 
+        public interface ISomething
+        {
+            int ID { get; set; }
+        }
+        public interface IOtherthing : ISomething
+        {
+            int OwnerID { get; set; }
+        }
+        public class EntityI : ISomething
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+        }
+        public class EntityJ : IOtherthing
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int ID { get; set; }
+
+            public int OwnerID { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -271,6 +309,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityF> EntityFSet { get; set; }
             public DbSet<EntityG> EntityGSet { get; set; }
             public DbSet<EntityH> EntityHSet { get; set; }
+            public DbSet<EntityI> EntityISet { get; set; }
+            public DbSet<EntityJ> EntityJSet { get; set; }
 
             public bool FiltersAreEnabled { get; set; }
 
@@ -301,6 +341,9 @@ namespace DynamicFiltersTests
 
                 modelBuilder.Filter("EntityHFilter", (EntityH h, int value) => h.ID < value, () => 5);
                 modelBuilder.DisableFilterGlobally("EntityHFilter");
+
+                modelBuilder.Filter("ISomethingFilter", (ISomething t, int id) => t.ID < id, () => 5, type => !typeof(IOtherthing).IsAssignableFrom(type));
+                modelBuilder.Filter("IOtherthingFilter", (IOtherthing t, int id) => t.ID == id || t.OwnerID > id, () => 5);
             }
 
             public override void Seed()
@@ -317,6 +360,8 @@ namespace DynamicFiltersTests
                     EntityFSet.Add(new EntityF { ID = i });
                     EntityGSet.Add(new EntityG { ID = i });
                     EntityHSet.Add(new EntityH { ID = i });
+                    EntityISet.Add(new EntityI { ID = i });
+                    EntityJSet.Add(new EntityJ { ID = i, OwnerID = i });
                 }
 
                 SaveChanges();

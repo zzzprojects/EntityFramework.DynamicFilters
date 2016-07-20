@@ -156,7 +156,7 @@ namespace EntityFramework.DynamicFilters
             if (columnName == null)
                 predicate = path;
 
-            modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate, columnName));
+            modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate, columnName, null));
 
             //  Always add the filter to _GlobalParameterValues - need it to be able to disable it
             _GlobalParameterValues.TryAdd(filterName, new DynamicFilterParameters());
@@ -169,120 +169,161 @@ namespace EntityFramework.DynamicFilters
 
         #region Lambda expression filters
 
-        public static void Filter<TEntity, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, Func<T0> value0)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="T0"></typeparam>
+        /// <param name="modelBuilder"></param>
+        /// <param name="filterName"></param>
+        /// <param name="predicate"></param>
+        /// <param name="value0"></param>
+        /// <param name="selectEntityTypeCondition">If not null, this delegate should return true if the filter should be applied to the given entity Type.
+        /// False if not.  Allows additional logic to be applied to determine if the filter should be applied to an Entity of type "TEntity".
+        /// i.e. To apply the filter to all entities of a particular interface but not if those entities also implement another interface.</param>
+        public static void Filter<TEntity, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, Func<T0> value0, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0);
         }
 
-        public static void Filter<TEntity, TContext, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, Func<TContext, T0> value0)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TContext"></typeparam>
+        /// <typeparam name="T0"></typeparam>
+        /// <param name="modelBuilder"></param>
+        /// <param name="filterName"></param>
+        /// <param name="predicate"></param>
+        /// <param name="value0"></param>
+        /// <param name="selectEntityTypeCondition">If not null, this delegate should return true if the filter should be applied to the given entity Type.
+        /// False if not.  Allows additional logic to be applied to determine if the filter should be applied to an Entity of type "TEntity".
+        /// i.e. To apply the filter to all entities of a particular interface but not if those entities also implement another interface.</param>
+        public static void Filter<TEntity, TContext, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, Func<TContext, T0> value0, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
             where TContext : DbContext
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0);
         }
 
-        public static void Filter<TEntity, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, T0 value0)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="T0"></typeparam>
+        /// <param name="modelBuilder"></param>
+        /// <param name="filterName"></param>
+        /// <param name="predicate"></param>
+        /// <param name="value0"></param>
+        /// <param name="selectEntityTypeCondition">If not null, this delegate should return true if the filter should be applied to the given entity Type.
+        /// False if not.  Allows additional logic to be applied to determine if the filter should be applied to an Entity of type "TEntity".
+        /// i.e. To apply the filter to all entities of a particular interface but not if those entities also implement another interface.</param>
+        public static void Filter<TEntity, T0>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, bool>> predicate, T0 value0, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0);
         }
 
         public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
-                                                    Func<T0> value0, Func<T1> value1)
+                                                    Func<T0> value0, Func<T1> value1, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1);
         }
 
         public static void Filter<TEntity, TContext, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
-                                                    Func<TContext, T0> value0, Func<TContext, T1> value1)
+                                                    Func<TContext, T0> value0, Func<TContext, T1> value1, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
             where TContext : DbContext
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1);
         }
 
         public static void Filter<TEntity, T0, T1>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, bool>> predicate,
-                                                    T0 value0, T1 value1)
+                                                    T0 value0, T1 value1, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1);
         }
 
         public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
-                                                        Func<T0> value0, Func<T1> value1, Func<T2> value2)
+                                                        Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2);
         }
 
         public static void Filter<TEntity, TContext, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
-                                                        Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2)
+                                                        Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2,
+                                                        Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
             where TContext : DbContext
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2);
         }
 
         public static void Filter<TEntity, T0, T1, T2>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, bool>> predicate,
-                                                        T0 value0, T1 value1, T2 value2)
+                                                        T0 value0, T1 value1, T2 value2, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2);
         }
 
         public static void Filter<TEntity, T0, T1, T2, T3>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, bool>> predicate,
-                                                            Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<T3> value3)
+                                                            Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<T3> value3, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
         }
 
         public static void Filter<TEntity, TContext, T0, T1, T2, T3>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, bool>> predicate,
-                                                            Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3)
+                                                            Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3,
+                                                            Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
             where TContext : DbContext
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
         }
 
         public static void Filter<TEntity, T0, T1, T2, T3>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, bool>> predicate,
-                                                            T0 value0, T1 value1, T2 value2, T3 value3)
+                                                            T0 value0, T1 value1, T2 value2, T3 value3, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3);
         }
 
         public static void Filter<TEntity, T0, T1, T2, T3, T4>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, T4, bool>> predicate,
-                                                                Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<T3> value3, Func<T4> value4)
+                                                                Func<T0> value0, Func<T1> value1, Func<T2> value2, Func<T3> value3, Func<T4> value4,
+                                                                Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
         }
 
         public static void Filter<TEntity, TContext, T0, T1, T2, T3, T4>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, T4, bool>> predicate,
-                                                                Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3, Func<TContext, T4> value4)
+                                                                Func<TContext, T0> value0, Func<TContext, T1> value1, Func<TContext, T2> value2, Func<TContext, T3> value3, Func<TContext, T4> value4,
+                                                                Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
             where TContext : DbContext
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
         }
 
         public static void Filter<TEntity, T0, T1, T2, T3, T4>(this DbModelBuilder modelBuilder, string filterName, Expression<Func<TEntity, T0, T1, T2, T3, T4, bool>> predicate,
-                                                                T0 value0, T1 value1, T2 value2, T3 value3, T4 value4)
+                                                                T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, Func<Type, bool> selectEntityTypeCondition = null)
             where TEntity : class
         {
-            Filter<TEntity>(modelBuilder, filterName, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
+            Filter<TEntity>(modelBuilder, filterName, selectEntityTypeCondition, predicate, (object)value0, (object)value1, (object)value2, (object)value3, (object)value4);
         }
 
-        private static void Filter<TEntity>(DbModelBuilder modelBuilder, string filterName, LambdaExpression predicate, params object[] valueList)
+        private static void Filter<TEntity>(DbModelBuilder modelBuilder, string filterName, Func<Type, bool> selectEntityTypeCondition, LambdaExpression predicate, params object[] valueList)
         {
             InitializeDynamicFilters(null);
 
             filterName = ScrubFilterName(filterName);
 
-            modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate));
+            modelBuilder.Conventions.Add(new DynamicFilterConvention(filterName, typeof(TEntity), predicate, null, selectEntityTypeCondition));
 
             //  Always add the filter to _GlobalParameterValues - need it to be able to disable it
             _GlobalParameterValues.TryAdd(filterName, new DynamicFilterParameters());
