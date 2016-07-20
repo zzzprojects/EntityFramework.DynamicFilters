@@ -36,3 +36,4 @@
 1.4.11: Signed the assembly
 2.0: See https://github.com/jcachat/EntityFramework.DynamicFilters#changes-in-version-2 for changes.
 2.1: Added support for Any() and All() on child collections
+2.2: Fixed SQL generation issue when main query (not filter predicate) contains nullable types.  Added ability to not apply filter to specific types.
