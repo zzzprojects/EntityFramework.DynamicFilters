@@ -144,6 +144,19 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void NullableType_AnyQueryWithNullIntEquals()
+        {
+            using (var context = new TestContext())
+            {
+                //  This tests issue #69.  When using CSpace, was not generating correct conditions for the condition in the
+                //  .Any() clause (or any other - FirstOrDefault, Where. etc) for nullable types.
+                int? id = null;
+                var result = context.EntityKSet.Any(k => k.TenantID == id);
+                Assert.IsTrue(result);
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -196,6 +209,11 @@ namespace DynamicFiltersTests
             public int Value { get; set; }
         }
 
+        public class EntityK : EntityBase
+        {
+            public string Name { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -212,6 +230,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityH> EntityHSet { get; set; }
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
+            public DbSet<EntityK> EntityKSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -251,6 +270,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityIFilter", (EntityI i) => i.TenantID == null);
 
                 modelBuilder.Filter("EntityJFilter", (EntityJ j) => j.Value <= 2);
+
+                modelBuilder.Filter("EntityKFilter", (EntityK k, int? tenantID) => k.TenantID == tenantID, () => null);
             }
 
             public override void Seed()
@@ -291,6 +312,10 @@ namespace DynamicFiltersTests
                 EntityJSet.Add(new EntityJ { ID = 2, Value = 2 });
                 EntityJSet.Add(new EntityJ { ID = 3, Value = 3 });
                 EntityJSet.Add(new EntityJ { ID = 4, Value = 4 });
+
+                EntityKSet.Add(new EntityK { ID = 1, TenantID = 1, Name = "A" });
+                EntityKSet.Add(new EntityK { ID = 2, TenantID = 2, Name = "B" });
+                EntityKSet.Add(new EntityK { ID = 3, TenantID = null, Name = "C" });
 
                 SaveChanges();
             }

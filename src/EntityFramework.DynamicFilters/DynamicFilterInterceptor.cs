@@ -41,10 +41,13 @@ namespace EntityFramework.DynamicFilters
 #endif
 
                     var newQuery = queryCommand.Query.Accept(visitor);
-                    interceptionContext.Result = new DbQueryCommandTree(
-                        queryCommand.MetadataWorkspace,
-                        queryCommand.DataSpace,
-                        newQuery);
+
+                    //  When using CSpace, must set the useDatabaseNullSemantics parameter to false or nullable types will not have
+                    //  null values translated to sql like this: ([Extent1].[TenantID] = @p__linq__0) OR (([Extent1].[TenantID] IS NULL) AND (@p__linq__0 IS NULL))
+                    //  and will instead just generate sql like this: [Extent1].[TenantID] = @p__linq__0
+                    //  If the parameter is not specified, it defaults to true...
+                    interceptionContext.Result = new DbQueryCommandTree(queryCommand.MetadataWorkspace, queryCommand.DataSpace, newQuery, true, 
+                                                                        (interceptionContext.OriginalResult.DataSpace != DataSpace.CSpace));
                 }
             }
 
