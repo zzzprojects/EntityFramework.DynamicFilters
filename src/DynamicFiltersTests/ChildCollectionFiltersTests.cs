@@ -82,6 +82,20 @@ namespace DynamicFiltersTests
             }
         }
 
+        //  Tests issue #71
+        [TestMethod]
+        public void ChildCollection_ManyToManyLoadGeneratedTable()
+        {
+            using (var context = new TestContext())
+            {
+                var g = context.EntityGSet.Single();
+                var entry = context.Entry(g);
+                entry.Collection(e => e.HEntities).Load();
+
+                Assert.IsTrue((g.HEntities != null) && (g.HEntities.Count == 1) && g.HEntities.All(h => g.ID == 1));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -170,6 +184,33 @@ namespace DynamicFiltersTests
             public int ChildValue { get; set; }
         }
 
+        public interface ISoftDelete
+        {
+            bool IsDeleted { get; set; }
+        }
+
+        public class EntityG : ISoftDelete
+        {
+            public EntityG()
+            {
+                HEntities = new HashSet<EntityH>();
+            }
+            public int ID { get; set; }
+            public virtual ICollection<EntityH> HEntities { get; set; }
+            public bool IsDeleted { get; set; }
+        }
+
+        public class EntityH : ISoftDelete
+        {
+            public EntityH()
+            {
+                GEntities = new HashSet<EntityG>();
+            }
+            public int ID { get; set; }
+            public virtual ICollection<EntityG> GEntities { get; set; }
+            public bool IsDeleted { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -188,6 +229,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityEChild> EntityEChildSet { get; set; }
             public DbSet<EntityF> EntityFSet { get; set; }
             public DbSet<EntityFChild> EntityFChildSet { get; set; }
+            public DbSet<EntityG> EntityGSet { get; set; }
+            public DbSet<EntityH> EntityHSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -209,6 +252,19 @@ namespace DynamicFiltersTests
                 //  Test where the child entities have a filter and the main entity uses All([predicate]) on that collection
                 modelBuilder.Filter("EntityFFilter", (EntityF f, int value) => f.Children.All(c => c.ChildValue == value), () => 1);
                 modelBuilder.Filter("EntityFChildFilter", (EntityFChild f, int value) => f.ChildValue <= value, () => 2);
+
+                modelBuilder.Entity<EntityG>()
+                .HasMany(g => g.HEntities)
+                .WithMany(h => h.GEntities)
+                .Map(
+                    m =>
+                    {
+                        m.MapLeftKey("EntityGID");
+                        m.MapRightKey("EntityHID");
+                        m.ToTable("EntityG_EntityH");
+                    });
+
+                modelBuilder.Filter("ISoftDeleteFilter", (ISoftDelete d) => d.IsDeleted, false);
 
                 //  TODO: Count()
                 //  TODO: Count([predicate])
@@ -282,6 +338,27 @@ namespace DynamicFiltersTests
                         new EntityFChild { ID = 5, ChildValue = 1 },
                         new EntityFChild { ID = 6, ChildValue = 2 },
                         new EntityFChild { ID = 7, ChildValue = 3 },
+                    }
+                });
+
+                EntityGSet.Add(new EntityG
+                {
+                    ID = 1,
+                    IsDeleted = false,
+                    HEntities = new HashSet<EntityH>
+                    {
+                        new EntityH { ID = 1, IsDeleted = false },
+                        new EntityH { ID = 2, IsDeleted = true },
+                    }
+                });
+                EntityGSet.Add(new EntityG
+                {
+                    ID = 2,
+                    IsDeleted = true,
+                    HEntities = new HashSet<EntityH>
+                    {
+                        new EntityH { ID = 3, IsDeleted = false },
+                        new EntityH { ID = 4, IsDeleted = true },
                     }
                 });
 

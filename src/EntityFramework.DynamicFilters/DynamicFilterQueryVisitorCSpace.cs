@@ -192,7 +192,10 @@ namespace EntityFramework.DynamicFilters
             if (configuration == null)
                 return new List<DynamicFilterDefinition>();
 
-            var annotations = configuration.GetType().GetProperty("Annotations").GetValue(configuration, null) as Dictionary<string, object>;
+            //  The "Annotations" property will not exist if this is a navigation property (because configuration
+            //  is a NavigationPropertyConfiguration object not an EntityTypeConfiguration object.
+            //  That happens if we use the entry.Load() command to load a child collection.  See issue #71.
+            var annotations = configuration.GetType().GetProperty("Annotations")?.GetValue(configuration, null) as Dictionary<string, object>;
             if (annotations == null)
                 return new List<DynamicFilterDefinition>();
 
