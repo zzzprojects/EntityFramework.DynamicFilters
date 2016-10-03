@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using EntityFramework.DynamicFilters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -42,6 +39,17 @@ namespace DynamicFiltersTests
             {
                 var list = context.People.ToList();
                 Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID == 1) || (a.ID == 3) || (a.ID == 11) || (a.ID == 12)));
+            }
+        }
+
+        //  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/76
+        [TestMethod]
+        public void KNOWN_ISSUE_TPT_InstructorAsProperty()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.Students.Include(s => s.Instructor).ToList();
+                Assert.IsTrue((list.Count == 2) && list.Any(a => (a.ID == 1) && (a.Instructor == null)) && list.Any(a => (a.ID == 3) && (a.Instructor != null)));
             }
         }
 
@@ -82,6 +90,9 @@ namespace DynamicFiltersTests
         public class Student : Person
         {
             public DateTime EnrollmentDate { get; set; }
+
+            public int? InstructorID { get; set; }
+            public Instructor Instructor { get; set; }
         }
 
         public class BaseModel
@@ -160,13 +171,13 @@ namespace DynamicFiltersTests
             {
                 System.Diagnostics.Debug.Print("Seeding db");
 
-                Students.Add(new Student { ID = 1, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 1) });
-                Students.Add(new Student { ID = 2, IsDeleted = true, EnrollmentDate = new DateTime(2015, 1, 2) });
-                Students.Add(new Student { ID = 3, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 3) });
+                var instructor1 = Instructors.Add(new Instructor { ID = 10, IsDeleted = true, HireDate = new DateTime(2015, 2, 1) });
+                var instructor2 = Instructors.Add(new Instructor { ID = 11, IsDeleted = false, HireDate = new DateTime(2015, 2, 2) });
+                var instructor3 = Instructors.Add(new Instructor { ID = 12, IsDeleted = false, HireDate = new DateTime(2015, 2, 3) });
 
-                Instructors.Add(new Instructor { ID = 10, IsDeleted = true, HireDate = new DateTime(2015, 2, 1) });
-                Instructors.Add(new Instructor { ID = 11, IsDeleted = false, HireDate = new DateTime(2015, 2, 2) });
-                Instructors.Add(new Instructor { ID = 12, IsDeleted = false, HireDate = new DateTime(2015, 2, 3) });
+                Students.Add(new Student { ID = 1, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 1), Instructor = instructor1 });
+                Students.Add(new Student { ID = 2, IsDeleted = true, EnrollmentDate = new DateTime(2015, 1, 2), Instructor = instructor2 });
+                Students.Add(new Student { ID = 3, IsDeleted = false, EnrollmentDate = new DateTime(2015, 1, 3), Instructor = instructor3 });
 
                 Residents.Add(new Resident { Created=new DateTime(2015, 1, 1), CreatedBy="me", Id=1, FirstName="Fred", LastName="Flintstone", Title="Mr", FamiliarName="Fred", Gender="M" });
                 Residents.Add(new Resident { Created=new DateTime(2015, 2, 1), CreatedBy="me", Deleted=new DateTime(2015, 2, 3), Id=2, FirstName="Barney", LastName="Rubble", Title="Mr", FamiliarName="Barney", Gender="M" });
