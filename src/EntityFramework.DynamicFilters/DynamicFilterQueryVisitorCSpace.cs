@@ -125,6 +125,15 @@ namespace EntityFramework.DynamicFilters
                         }
 
                         var entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.Name);
+                        if (entitySet == null)
+                        {
+#if (DEBUG)
+                            throw new ApplicationException(string.Format("EntitySet not found for {0} - this is a known issue when using TPT", baseResult.ResultType.EdmType.Name));
+#else
+                            return baseResult;
+#endif
+                        }
+
                         var scanExpr = DbExpressionBuilder.Scan(entitySet);
                         var binding = DbExpressionBuilder.Bind(scanExpr);
 
