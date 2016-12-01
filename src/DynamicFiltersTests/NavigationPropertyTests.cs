@@ -11,7 +11,6 @@ namespace DynamicFiltersTests
 {
 #if USE_CSPACE
 
-    //  Tests related to null comparisons and Nullable<T>.HasValue handling in lambda filters (issue #14)
     [TestClass]
     public class NavigationPropertyTests
     {

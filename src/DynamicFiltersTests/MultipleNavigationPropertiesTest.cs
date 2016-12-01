@@ -1,10 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using EntityFramework.DynamicFilters;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DynamicFiltersTests
 {
@@ -47,6 +46,18 @@ namespace DynamicFiltersTests
             }
         }
 
+        //  Tests issue #85
+        [TestMethod]
+        public void MultipleNavigationProperties_ParentOfSameType()
+        {
+            using (var context = new TestContext())
+            {
+                var userInfo4 = context.UserInfos.Include(a => a.Parent).FirstOrDefault(t => t.Id == 4);
+
+                Assert.IsTrue((userInfo4.Parent != null) && (userInfo4.Parent.Id == userInfo4.ParentId), "Parent property not loaded");
+            }
+        }
+
         #region Models
 
         //  2nd ISoftDelete so it doesn't interfere with the filter tests on the other models
@@ -82,6 +93,22 @@ namespace DynamicFiltersTests
             public bool IsDeleted { get; set; }
         }
 
+        public class UserInfo : IEntitySoftDelete
+        {
+            [Key]
+            [Required]
+            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            public int? ParentId { get; set; }
+
+            [ForeignKey("ParentId")]
+            public UserInfo Parent { get; set; }
+
+            public bool IsDeleted { get; set; }
+        }
         #endregion
 
         #region TestContext
@@ -90,6 +117,7 @@ namespace DynamicFiltersTests
         {
             public DbSet<EntityA> EntityASet { get; set; }
             public DbSet<EntityB> EntityBSet { get; set; }
+            public DbSet<UserInfo> UserInfos { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -109,6 +137,36 @@ namespace DynamicFiltersTests
                 EntityASet.Add(a1);
                 EntityASet.Add(a2);
                 EntityASet.Add(a3);
+
+                UserInfos.Add(new UserInfo()
+                {
+                    Id = 1,
+                    Name = "1",
+                    ParentId = null,
+                    IsDeleted = false
+                });
+                UserInfos.Add(new UserInfo()
+                {
+                    Id = 2,
+                    Name = "2",
+                    ParentId = null,
+                    IsDeleted = false
+                });
+                UserInfos.Add(new UserInfo()
+                {
+                    Id = 3,
+                    Name = "3",
+                    ParentId = null,
+                    IsDeleted = false
+                });
+                UserInfos.Add(new UserInfo()
+                {
+                    Id = 4,
+                    Name = "4",
+                    ParentId = 1,
+                    IsDeleted = false
+                });
+
                 SaveChanges();
             }
         }

@@ -148,7 +148,20 @@ namespace EntityFramework.DynamicFilters
                         }
 
                         //  Figure out if the "baseResults" are the from side or to side of the constraint so we can create the properties correctly
-                        bool baseResultIsFromRole = (basePropertyResult.Instance.ResultType.EdmType == ((AssociationEndMember)associationType.Constraint.FromRole).GetEntityType());
+                        //  Note that this navigation property may be the same type as parent entity (so both association types
+                        //  will be the same type).  In that case, we need to figure out which side of the association matches the
+                        //  PKs of the main entity.
+                        var fromEdmType = ((AssociationEndMember)associationType.Constraint.FromRole).GetEntityType();
+                        var toEdmType = ((AssociationEndMember)associationType.Constraint.ToRole).GetEntityType();
+                        bool baseResultIsFromRole;
+                        if (fromEdmType != toEdmType)
+                            baseResultIsFromRole = (basePropertyResult.Instance.ResultType.EdmType == fromEdmType);
+                        else
+                        {
+                            //  When same, basePropertyResult is the child property and binding is the main entity.
+                            //  Fixes issue #85.
+                            baseResultIsFromRole = false;
+                        }
 
                         DbExpression joinCondition = null;
                         for (int i = 0; i < associationType.Constraint.FromProperties.Count; i++)
