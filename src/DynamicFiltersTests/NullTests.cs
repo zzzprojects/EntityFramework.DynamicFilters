@@ -157,6 +157,16 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void NullableType_NullCoalescingOperator()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityLSet.ToList();
+                Assert.IsTrue((list.Count == 1) && list.All(l => (l.ID == 1)));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -214,6 +224,9 @@ namespace DynamicFiltersTests
             public string Name { get; set; }
         }
 
+        public class EntityL : EntityBase
+        { }
+
         #endregion
 
         #region TestContext
@@ -231,6 +244,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityI> EntityISet { get; set; }
             public DbSet<EntityJ> EntityJSet { get; set; }
             public DbSet<EntityK> EntityKSet { get; set; }
+            public DbSet<EntityL> EntityLSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -272,6 +286,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityJFilter", (EntityJ j) => j.Value <= 2);
 
                 modelBuilder.Filter("EntityKFilter", (EntityK k, int? tenantID) => k.TenantID == tenantID, () => null);
+
+                modelBuilder.Filter("EntityLFilter", (EntityL l, int? tenantID) => l.TenantID == (tenantID ?? 1), () => null);
             }
 
             public override void Seed()
@@ -316,6 +332,10 @@ namespace DynamicFiltersTests
                 EntityKSet.Add(new EntityK { ID = 1, TenantID = 1, Name = "A" });
                 EntityKSet.Add(new EntityK { ID = 2, TenantID = 2, Name = "B" });
                 EntityKSet.Add(new EntityK { ID = 3, TenantID = null, Name = "C" });
+
+                EntityLSet.Add(new EntityL { ID = 1, TenantID = 1 });
+                EntityLSet.Add(new EntityL { ID = 2, TenantID = 2 });
+                EntityLSet.Add(new EntityL { ID = 3, TenantID = null });
 
                 SaveChanges();
             }

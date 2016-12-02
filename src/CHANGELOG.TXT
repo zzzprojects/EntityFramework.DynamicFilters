@@ -39,3 +39,4 @@
 2.2: Fixed SQL generation issue when main query (not filter predicate) contains nullable types.  Added ability to not apply filter to specific types.
 2.3: Fixed issue with entry.Load() on child collections
 2.4: Fixed null exception error on a filter of child property that is also TPT
+2.5: Fixed filtered child property of same type as parent entity builds backwards join condition.  Added support for ?? operator.

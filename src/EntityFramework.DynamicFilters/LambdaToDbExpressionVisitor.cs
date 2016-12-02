@@ -135,6 +135,13 @@ namespace EntityFramework.DynamicFilters
                         dbExpression = EdmFunctions.BitwiseXor(leftExpression, rightExpression);
                         break;
 
+                    case ExpressionType.Coalesce:
+                        //  EF does not expose the "coalesce" function.  So best we can do is a case statement.  Issue #77.
+                        var whenExpressions = new List<DbExpression>() { DbExpressionBuilder.IsNull(leftExpression) };
+                        var thenExpressions = new List<DbExpression>() { rightExpression };
+                        dbExpression = DbExpressionBuilder.Case(whenExpressions, thenExpressions, leftExpression);
+                        break;
+
                     default:
                         throw new NotImplementedException(string.Format("Unhandled NodeType of {0} in LambdaToDbExpressionVisitor.VisitBinary", expression.NodeType));
                 }
