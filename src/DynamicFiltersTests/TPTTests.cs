@@ -44,7 +44,7 @@ namespace DynamicFiltersTests
 
         //  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/76
         [TestMethod]
-        public void KNOWN_ISSUE_TPT_InstructorAsProperty()
+        public void TPT_InstructorAsProperty()
         {
             using (var context = new TestContext())
             {

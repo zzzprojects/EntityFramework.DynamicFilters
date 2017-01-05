@@ -44,13 +44,24 @@ namespace EntityFramework.DynamicFilters
 
             if (dbExpression is DbPropertyExpression)
             {
-                //  Special case to handle a condition that is just a plan "boolFlag" condition.
-                //  In order for the sql to generate correct, we need to turn this into "boolFlag = true"
-                //  Figuring out the defaultValue like this should produce the default (0, false, empty) value for the type
-                //  we are working with.  So checking then generating a condition of "not (@var = defaultValue)" should produce
-                //  the correct condition.
-                var defaultValue = DbExpressionBuilder.Constant(dbExpression.ResultType, Activator.CreateInstance(expression.Body.Type));
-                dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.Equal(dbExpression, defaultValue));
+                //  Special case to handle a condition that is just a plain "boolFlag" or a nullable generic condition.
+                //  For a nullable type, we only get here when the filter has either not specified a value for the nullable
+                //  parameter or it has specified "null" - both evaluate the same as far as the method prototypes can tell
+                //  since the method signature is "param = null".  This needs to generate a sql "is null" condition.
+                //  Otherwise, no param value was specified so we are assuming that we need to generate a "positive"
+                //  condition.  i.e. the filter just said "b.prop" which generally means "b.prop == true".
+                //  To generate that condition correctly for all types (may not necessarily be a bool), we create a condition
+                //  like "!(b.prop == [defaultValue])"
+
+                if (IsNullableType(expression.Body.Type))
+                {
+                    dbExpression = DbExpressionBuilder.IsNull(dbExpression);
+                }
+                else
+                {
+                    var defaultValue = DbExpressionBuilder.Constant(dbExpression.ResultType, Activator.CreateInstance(expression.Body.Type));
+                    dbExpression = DbExpressionBuilder.Not(DbExpressionBuilder.Equal(dbExpression, defaultValue));
+                }
             }
 
             return dbExpression;

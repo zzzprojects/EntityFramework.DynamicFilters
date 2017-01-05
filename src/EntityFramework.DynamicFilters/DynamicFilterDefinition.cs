@@ -8,6 +8,13 @@ namespace EntityFramework.DynamicFilters
 {
     internal class DynamicFilterDefinition
     {
+        /// <summary>
+        /// Unique ID assigned to each distinct filter.  Used to find unique filters on an entity
+        /// which may be involved in TPT/TPH (which can cause the same filter to be added to the
+        /// base class as well as derived classes).
+        /// </summary>
+        public Guid ID { get; private set; }
+
         public string FilterName { get; private set; }
 
         /// <summary>
@@ -24,8 +31,9 @@ namespace EntityFramework.DynamicFilters
 
         public string AttributeName { get { return string.Concat(DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX, DynamicFilterConstants.DELIMETER, CLRType.Name, DynamicFilterConstants.DELIMETER, FilterName); } }
 
-        internal DynamicFilterDefinition(string filterName, LambdaExpression predicate, string columnName, Type clrType)
+        internal DynamicFilterDefinition(Guid id, string filterName, LambdaExpression predicate, string columnName, Type clrType)
         {
+            ID = id;
             FilterName = filterName;
             Predicate = predicate;
             ColumnName = columnName;

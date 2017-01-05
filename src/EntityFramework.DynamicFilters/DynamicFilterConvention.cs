@@ -19,10 +19,12 @@ namespace EntityFramework.DynamicFilters
         public DynamicFilterConvention(string filterName, Type entityType, LambdaExpression predicate,
                                         string columnName, Func<Type, bool> selectEntityTypeCondition)
         {
+            var id = Guid.NewGuid();
+
             var configuration = Types().Where(t => entityType.IsAssignableFrom(t) && ((selectEntityTypeCondition == null) || selectEntityTypeCondition(t)));
             configuration.Configure(ctc =>
             {
-                var filterDefinition = new DynamicFilterDefinition(filterName, predicate, columnName, ctc.ClrType);
+                var filterDefinition = new DynamicFilterDefinition(id, filterName, predicate, columnName, ctc.ClrType);
 
                 ctc.HasTableAnnotation(filterDefinition.AttributeName, filterDefinition);
             });

@@ -167,6 +167,19 @@ namespace DynamicFiltersTests
             }
         }
 
+        /// <summary>
+        /// Tests a filter on a DateTime property that is specified as null via a parameter (not delegate)
+        /// </summary>
+        [TestMethod]
+        public void NullableType_DateTimeParamIsNull()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityMSet.ToList();
+                Assert.IsTrue((list.Count == 1) && (list.FirstOrDefault().ID == 1));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -227,6 +240,9 @@ namespace DynamicFiltersTests
         public class EntityL : EntityBase
         { }
 
+        public class EntityM: EntityBase
+        { }
+
         #endregion
 
         #region TestContext
@@ -245,6 +261,7 @@ namespace DynamicFiltersTests
             public DbSet<EntityJ> EntityJSet { get; set; }
             public DbSet<EntityK> EntityKSet { get; set; }
             public DbSet<EntityL> EntityLSet { get; set; }
+            public DbSet<EntityM> EntityMSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -288,6 +305,8 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityKFilter", (EntityK k, int? tenantID) => k.TenantID == tenantID, () => null);
 
                 modelBuilder.Filter("EntityLFilter", (EntityL l, int? tenantID) => l.TenantID == (tenantID ?? 1), () => null);
+
+                modelBuilder.Filter("EntityMFilter", (EntityM m) => m.DeleteTimestamp, null);
             }
 
             public override void Seed()
@@ -336,6 +355,9 @@ namespace DynamicFiltersTests
                 EntityLSet.Add(new EntityL { ID = 1, TenantID = 1 });
                 EntityLSet.Add(new EntityL { ID = 2, TenantID = 2 });
                 EntityLSet.Add(new EntityL { ID = 3, TenantID = null });
+
+                EntityMSet.Add(new EntityM { ID = 1 });
+                EntityMSet.Add(new EntityM { ID = 2, DeleteTimestamp = DateTime.Now.AddMinutes(-1) });
 
                 SaveChanges();
             }

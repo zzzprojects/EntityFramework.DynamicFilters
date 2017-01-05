@@ -41,6 +41,44 @@ namespace EntityFramework.DynamicFilters
             _ObjectContext = ((IObjectContextAdapter)contextForInterception).ObjectContext;
         }
 
+        public override DbExpression Visit(DbOfTypeExpression expression)
+        {
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbOfTypeExpression): OfType={0}", expression.OfType.EdmType.Name);
+#endif
+
+            //  This visitor is called for TPH & TPT entities that need to map from base entity type to the
+            //  actual type.  Argument contains the base type expression (i.e. User) and OfType contains the
+            //  derived type (i.e. Student).
+            //  We need to check for any filters that are defined only on the derived type and apply those filters
+            //  here - they will not be detected during the DbScanExpression visitor because those filters will not
+            //  exist on the base type.
+            //  Filters defined on the base type will be found on both entities.  So we only want to apply the filter
+            //  that are defined on the OfType entity that are not defined on the Argument entity (as those will be
+            //  applied during the DbScanExpression visitor).
+            IEnumerable<DynamicFilterDefinition> scanFilterList = null;
+            var scanExp = expression.Argument as DbScanExpression;
+            if (scanExp != null)
+                scanFilterList = FindFiltersForEntitySet(scanExp.Target.ElementType.MetadataProperties);
+            var ofTypeFilterList = FindFiltersForEntitySet(expression.OfType.EdmType.MetadataProperties);
+            var filtersToApply = ofTypeFilterList.Where(f => (scanFilterList == null) || !scanFilterList.Any(f2 => f2.ID == f.ID));
+
+            var baseResult = base.Visit(expression);
+
+            if (filtersToApply.Any())
+            {
+                var binding = DbExpressionBuilder.Bind(baseResult);
+                var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filtersToApply, binding, null);
+                if (newFilterExpression != null)
+                {
+                    //  If not null, a new DbFilterExpression has been created with our dynamic filters.
+                    return newFilterExpression;
+                }
+            }
+
+            return baseResult;
+        }
+
         public override DbExpression Visit(DbScanExpression expression)
         {
 #if DEBUG_VISITS
@@ -54,14 +92,14 @@ namespace EntityFramework.DynamicFilters
             //  This method will only be called for the initial entity.  Any other references to other entities will be
             //  handled by the Visit(DbPropertyExpression) - this includes filter references and includes.
 
-            string entityName = expression.Target.Name;
-            var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties, expression.Target.EntityContainer);
+            var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties);
+            System.Diagnostics.Debug.Print("  Found {0} filters", filterList.Count());
 
             var baseResult = base.Visit(expression);
             if (filterList.Any())
             {
                 var binding = DbExpressionBuilder.Bind(baseResult);
-                var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
+                var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filterList, binding, null);
                 if (newFilterExpression != null)
                 {
                     //  If not null, a new DbFilterExpression has been created with our dynamic filters.
@@ -91,9 +129,8 @@ namespace EntityFramework.DynamicFilters
             {
                 var targetEntityType = navProp.ToEndMember.GetEntityType();
 
-                string entityName = targetEntityType.Name;
                 var containers = _ObjectContext.MetadataWorkspace.GetItems<EntityContainer>(DataSpace.CSpace).First();
-                var filterList = FindFiltersForEntitySet(targetEntityType.MetadataProperties, containers);
+                var filterList = FindFiltersForEntitySet(targetEntityType.MetadataProperties);
 
                 if (filterList.Any())
                 {
@@ -102,7 +139,7 @@ namespace EntityFramework.DynamicFilters
                     if (baseResult.ResultType.EdmType.BuiltInTypeKind == BuiltInTypeKind.CollectionType)
                     {
                         var binding = DbExpressionBuilder.Bind(baseResult);
-                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, null);
+                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filterList, binding, null);
                         if (newFilterExpression != null)
                         {
                             //  If not null, a new DbFilterExpression has been created with our dynamic filters.
@@ -124,17 +161,28 @@ namespace EntityFramework.DynamicFilters
                             return baseResult;
                         }
 
+                        DbExpression scanExpr;
+
                         var entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.Name);
                         if (entitySet == null)
                         {
-#if (DEBUG)
-                            throw new ApplicationException(string.Format("EntitySet not found for {0} - this is a known issue when using TPT", baseResult.ResultType.EdmType.Name));
-#else
-                            return baseResult;
-#endif
-                        }
+                            if (baseResult.ResultType.EdmType.BaseType == null)
+                                throw new ApplicationException(string.Format("EntitySet not found for {0}", baseResult.ResultType.EdmType.Name));
 
-                        var scanExpr = DbExpressionBuilder.Scan(entitySet);
+                            //  Did not find the entity set for the property but it has a base type.
+                            //  This means the entity set of the property is a derived class of a TPT base class.
+                            //  Find the entity set of the parent and then map it to the type we need.
+                            //  Then we can bind against that expression.
+                            entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.BaseType.Name);
+                            if (entitySet == null)        //  hope we don't need to do this recursively...
+                                throw new ApplicationException(string.Format("EntitySet not found for {0} or BaseType {1}", baseResult.ResultType.EdmType.Name, baseResult.ResultType.EdmType.BaseType.Name));
+
+                            var parentScanExpr = DbExpressionBuilder.Scan(entitySet);
+                            scanExpr = DbExpressionBuilder.OfType(parentScanExpr, baseResult.ResultType);
+                        }
+                        else
+                            scanExpr = DbExpressionBuilder.Scan(entitySet);
+
                         var binding = DbExpressionBuilder.Bind(scanExpr);
 
                         //  Build the join conditions that are needed to join from the source object (basePropertyResult.Instance)
@@ -184,7 +232,7 @@ namespace EntityFramework.DynamicFilters
 
                         //  Translate the filter predicate into a DbExpression bound to the Scan expression of the target entity set.
                         //  Those conditions are then and'd with the join conditions necessary to join the target table with the source table.
-                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(entityName, filterList, binding, joinCondition);
+                        var newFilterExpression = BuildFilterExpressionWithDynamicFilters(filterList, binding, joinCondition);
                         if (newFilterExpression != null)
                         {
                             //  Converts the collection results into a single row.  The expected output is a single item so EF will
@@ -208,7 +256,7 @@ namespace EntityFramework.DynamicFilters
             return baseResult;
         }
 
-        private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties, EntityContainer entityContainer)
+        private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties)
         {
             var configuration = metadataProperties.FirstOrDefault(p => p.Name == "Configuration")?.Value;
             if (configuration == null)
@@ -232,7 +280,7 @@ namespace EntityFramework.DynamicFilters
             return filterList;
         }
 
-        private DbFilterExpression BuildFilterExpressionWithDynamicFilters(string entityName, IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
+        private DbFilterExpression BuildFilterExpressionWithDynamicFilters(IEnumerable<DynamicFilterDefinition> filterList, DbExpressionBinding binding, DbExpression predicate)
         {
             if (!filterList.Any())
                 return null;
@@ -316,7 +364,7 @@ namespace EntityFramework.DynamicFilters
             return DbExpressionBuilder.Filter(binding, newPredicate);
         }
 
-        #region Extra (currently not needed) Visit calls - for debugging
+#region Extra (currently not needed) Visit calls - for debugging
 
 #if DEBUG_VISITS
 
@@ -397,8 +445,49 @@ namespace EntityFramework.DynamicFilters
             return base.Visit(expression);
         }
 
+        public override DbExpression Visit(DbFilterExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbFilterExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbCastExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbCastExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbLimitExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbLimitExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbIsOfExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbIsOfExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbQuantifierExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbQuantifierExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbTreatExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbTreatExpression): {0}", expression);
+            return base.Visit(expression);
+        }
+
+        public override DbExpression Visit(DbUnionAllExpression expression)
+        {
+            System.Diagnostics.Debug.Print("Visit(DbUnionAllExpression): {0}", expression);
+            return base.Visit(expression);
+        }
 #endif
 
-        #endregion
+#endregion
     }
 }
