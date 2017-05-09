@@ -173,7 +173,17 @@ namespace EntityFramework.DynamicFilters
                             //  This means the entity set of the property is a derived class of a TPT base class.
                             //  Find the entity set of the parent and then map it to the type we need.
                             //  Then we can bind against that expression.
-                            entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == baseResult.ResultType.EdmType.BaseType.Name);
+                            var currentBaseType = baseResult.ResultType.EdmType.BaseType;
+                            while (entitySet == null && currentBaseType != null)
+                            {
+                                entitySet = containers.EntitySets.FirstOrDefault(e => e.ElementType.Name == currentBaseType.Name);
+
+                                if (entitySet == null)
+                                {
+                                    currentBaseType = currentBaseType.BaseType;
+                                }
+                            }
+
                             if (entitySet == null)        //  hope we don't need to do this recursively...
                                 throw new ApplicationException(string.Format("EntitySet not found for {0} or BaseType {1}", baseResult.ResultType.EdmType.Name, baseResult.ResultType.EdmType.BaseType.Name));
 
