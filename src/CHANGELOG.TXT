@@ -41,3 +41,4 @@
 2.4: Fixed null exception error on a filter of child property that is also TPT
 2.5: Fixed filtered child property of same type as parent entity builds backwards join condition.  Added support for ?? operator.
 2.6: Fixed issue with filter not applied when defined on derived class involved in TPH.  Fixed filter not applied to navigation property when nav prop is a TPT entity.  Fixed issue with filter on nullable property specified as null via parameter (not delegate).
+2.7: Fixed exception when accessing class in deep inheritance graph
