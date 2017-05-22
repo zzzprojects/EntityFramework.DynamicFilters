@@ -270,6 +270,32 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("VisitMember: {0}, expression.NodeType={1}, Member={2}", node, node.Expression.NodeType, node.Member);
 #endif
 
+            //  This handles fields/properties that are embedded directly inside the linq statement.
+            //  These values are evaluated as constants and because we can only do this when the query is compiled
+            //  (not each time it is executed), it will always have the same value.
+            //  If the value should change or be re-evaluated each time the query is executed, it should
+            //  be made a parameter of the filter!
+            //  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/109
+            if ((node.Expression is ConstantExpression) ||                                      //  class field/property
+                ((node.Expression == null) && (node.NodeType == ExpressionType.MemberAccess)))  //  static field/property
+            {
+                //  Class fields & properties must reference the container (the class instance that contains the field/property)
+                object container = (node.Expression != null) ? ((ConstantExpression)node.Expression).Value : null;
+
+                if (node.Member is FieldInfo)               //  regular field property (not a get accessor)
+                {
+                    var value = ((FieldInfo)node.Member).GetValue(container);
+                    return VisitConstant(Expression.Constant(value));
+                }
+                else if (node.Member is PropertyInfo)       //  get accessor
+                {
+                    object value = ((PropertyInfo)node.Member).GetValue(container, null);
+                    return VisitConstant(Expression.Constant(value));
+                }
+                else
+                    throw new NotImplementedException();
+            }
+
             var expression = base.VisitMember(node) as MemberExpression;
 
             if ((expression.Expression.NodeType == ExpressionType.Parameter) && (expression.Expression.Type.IsClass || expression.Expression.Type.IsInterface))
@@ -475,7 +501,15 @@ namespace EntityFramework.DynamicFilters
                     expression = MapAnyOrAllExpression(node);
                     break;
                 default:
-                    throw new NotImplementedException(string.Format("Unhandled Method of {0} in LambdaToDbExpressionVisitor.VisitMethodCall", node.Method.Name));
+                    //  Anything else is invoked and handled as a constant.  This allows us to handle user-defined methods.
+                    //  If this evaluates to something that is not a constant, it will throw an exception...which is what we used to do anyway.
+                    //  Because we can only do this when the query is compiled (not each time it is executed), it will always have the 
+                    //  same value.  If the value should change or be re-evaluated each time the query is executed, it should
+                    //  be made a parameter of the filter!
+                    //  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/109
+                    var func = Expression.Lambda(node).Compile();
+                    var value = func.DynamicInvoke();
+                    return VisitConstant(Expression.Constant(value));
             }
 
             return expression;
