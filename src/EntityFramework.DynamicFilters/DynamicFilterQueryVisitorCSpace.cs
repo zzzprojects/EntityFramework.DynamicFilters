@@ -28,11 +28,10 @@ namespace EntityFramework.DynamicFilters
         /// <returns></returns>
         public static bool DoesNotSupportElementMethod(DbContext context)
         {
-            //  Oracle may support this in newer versions (Database version 12c) but did not verify.
-            //  (see https://community.oracle.com/message/10168766#10168766).
-            //  If we find that newer versions do support what we need, we can recognize that here
-            //  and return false to avoid the extra SSpace processing.
-            return context.IsOracle();
+            //  Oracle 11g (and prior?) do not support this (see https://community.oracle.com/message/10168766#10168766).
+            //  But as of Oracle 12, it does.
+
+            return context.OracleVersion()?.Major < 12;     //  If this is true, we are connected to Oracle 11 (or older)
         }
 
         public DynamicFilterQueryVisitorCSpace(DbContext contextForInterception)

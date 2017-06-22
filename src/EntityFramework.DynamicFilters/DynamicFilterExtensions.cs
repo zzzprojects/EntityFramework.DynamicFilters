@@ -1125,17 +1125,42 @@ namespace EntityFramework.DynamicFilters
 
         #endregion
 
-        #region Private Methods
+        #region Database Server Info
 
-        internal static bool IsOracle(this DbContext context)
+        public static bool IsOracle(this DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("Oracle");
         }
 
-        internal static bool IsMySql(this DbContext context)
+        //  Static cache of oracle versions so that we only do this ONCE per datasource.
+        private static ConcurrentDictionary<string, Version> _OracleInstanceVersions = new ConcurrentDictionary<string, Version>();
+
+        /// <summary>
+        /// Returns the verson of the Oracle server or null if this is not an Oracle server
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static Version OracleVersion(this DbContext context)
+        {
+            if (!context.IsOracle())
+                return null;
+
+            return _OracleInstanceVersions.GetOrAdd(context.Database.Connection.ConnectionString, k =>
+            {
+                var versionStr = context.Database.SqlQuery<string>("select version from v$instance").FirstOrDefault();
+
+                return new Version(string.Join(".", versionStr.Split('.').Take(4)));
+            });
+        }
+
+        public static bool IsMySql(this DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("MySql");
         }
+
+        #endregion
+
+        #region Private Methods
 
         private static string ScrubFilterName(string filterName)
         {

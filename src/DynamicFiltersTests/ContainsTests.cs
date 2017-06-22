@@ -137,13 +137,13 @@ namespace DynamicFiltersTests
                 //  The Oracle EF driver stores a DateTime as a DATE type and then throws an error saying
                 //  "The member with identity 'Precision' does not exist in the metadata collection" if you try to use it!
                 //  Only DateTimeOffset works in Oracle (which maps to a TIMESTAMP type)
-                if (context.IsOracle)
+                if (context.IsOracle())
                     return;
 
                 var list = context.EntityJSet.ToList();
 
                 //  MySql does not support milliseconds so need to check without
-                if (context.IsMySql)
+                if (context.IsMySql())
                     Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56)) || (j.DateValue == new DateTime(2015, 1, 3)))));
                 else
                     Assert.IsTrue((list.Count == 3) && list.All(j => (j.DateValue == new DateTime(2015, 1, 1) || (j.DateValue == new DateTime(2015, 1, 2, 12, 34, 56, 190)) || (j.DateValue == new DateTime(2015, 1, 3)))));

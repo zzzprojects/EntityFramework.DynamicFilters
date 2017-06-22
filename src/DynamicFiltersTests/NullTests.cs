@@ -24,7 +24,7 @@ namespace DynamicFiltersTests
             {
                 //  On Oracle, this test throws the "The member with identity 'Precision' does not exist in the metadata collection"
                 //  exception due to a problem with the Oracle EF driver & DateTime datatypes.  Skipping the test.
-                if (context.IsOracle)
+                if (context.IsOracle())
                     return;
 
                 var list = context.EntityASet.ToList();
@@ -57,7 +57,7 @@ namespace DynamicFiltersTests
             {
                 //  On Oracle, this test throws the "The member with identity 'Precision' does not exist in the metadata collection"
                 //  exception due to a problem with the Oracle EF driver & DateTime datatypes.  Skipping the test.
-                if (context.IsOracle)
+                if (context.IsOracle())
                     return;
 
                 var list = context.EntityCSet.ToList();

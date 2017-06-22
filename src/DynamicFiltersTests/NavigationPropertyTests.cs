@@ -41,14 +41,15 @@ namespace DynamicFiltersTests
             {
                 var list = context.EntityCSet.Include(c => c.Child).ToList();
 
-                if (context.IsOracle)
+                if (context.OracleVersion()?.Major < 12)     //  If this is true, we are connected to Oracle 11 (or older)
                 {
-                    //  Oracle currently does not support the DbExpression.Element() method that is needed
+                    //  Oracle 11 does not support the DbExpression.Element() method that is needed
                     //  when applying filters to child properties.  To better support that, those filters are applied
                     //  using SSpace which then also results in them building an inner join against the child property.
                     //  That is technically not correct - the filter in this case is against the child property
                     //  so it should do an outer join and just leave the child set as null.
                     //  But allowing this test to pass for now because there is no other way to support the filter.
+                    //  Oracle 12 DOES support it and works properly
                     Assert.IsTrue(list.Count == 2);
                 }
                 else

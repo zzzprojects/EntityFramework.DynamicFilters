@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.Entity;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using EntityFramework.DynamicFilters;
 using Oracle.ManagedDataAccess.Client;
 
@@ -14,7 +10,6 @@ namespace DynamicFiltersTests
     {
         void Seed();
 
-        bool IsOracle { get; }
         string SchemaName { get; }
     }
 
@@ -59,7 +54,7 @@ namespace DynamicFiltersTests
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            if (IsOracle)
+            if (this.IsOracle())
             {
                 //  For Oracle, we must set the default schema or EF will try to use "dbo" which will not be valid.
                 //  And it must be upper case.
@@ -74,20 +69,11 @@ namespace DynamicFiltersTests
 
         public abstract void Seed();
 
-        public bool IsOracle
-        {
-            get { return Database.Connection.GetType().FullName.Contains("Oracle"); }
-        }
-        public bool IsMySql
-        {
-            get { return Database.Connection.GetType().FullName.Contains("MySql"); }
-        }
-
         public string SchemaName
         {
             get
             {
-                if (!IsOracle)
+                if (!this.IsOracle())
                     return "dbo";
 
                 //  Can't use the EF default schema of "dbo" for Oracle...
@@ -104,7 +90,7 @@ namespace DynamicFiltersTests
 
         public override void InitializeDatabase(T context)
         {
-            if (context.IsOracle)
+            if (context.IsOracle())
             {
                 //  Under Oracle, the DropCreateDatabaseAlways doesn't do what it says it does...
                 //  It throws a table already exists error if __MigrationHistory is already there.
