@@ -152,3 +152,9 @@ This expression can be specified as either a Func<object> or a Func<DbContext, o
 Oracle is supported using the [Official Oracle ODP.NET, Managed Entity Framework Driver](https://www.nuget.org/packages/Oracle.ManagedDataAccess.EntityFramework) with the following limitations:
 * The Oracle driver does not support generating an "in" expression.  Using the "Contains" operator will result in outputting a series of equals/or expressions.
 * Using a DateTime value tends to throw an exception saying "The member with identity 'Precision' does not exist in the metadata collection."  This seems to be a bug in the Oracle driver.  Using a DateTimeOffset instead of a DateTime works correctly (which also then uses the Oracle TIMESTAMP datatype instead of DATE).
+
+## SQL Server CE Support
+--------------
+SQL Server CE is supported with the following limitations:
+* The SQL Server CE provider does not support modifying the CommandText property during SQL interception.  That is necessary in order to do some of the dynamic parameter value replacements.  This means that Contains(IEnumerable<T>) is not supported on SQL Server CE and will throw an exception.
+* SQL Server CE does not support the "like @value+'%'" syntax (see https://stackoverflow.com/questions/1916248/how-to-use-parameter-with-like-in-sql-server-compact-edition).  So string.StartsWith(@value) is not supported and will throw a Format exception.

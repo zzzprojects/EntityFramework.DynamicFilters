@@ -13,7 +13,7 @@ namespace DynamicFiltersTests
     /// Tests for support of various data types
     /// </summary>
     [TestClass]
-    public class DataTypeTests
+    public class DataTypeTests : TestBase
     {
         [TestMethod]
         public void DataType_EnumEquals()
@@ -30,8 +30,15 @@ namespace DynamicFiltersTests
         {
             using (var context1 = new TestContext())
             {
-                var list = context1.EntityBSet.ToList();
-                Assert.IsTrue((list.Count == 2) && (list.All(b => (b.ID == 1) || (b.ID == 4))));
+                try
+                {
+                    var list = context1.EntityBSet.ToList();
+                    Assert.IsTrue((list.Count == 2) && (list.All(b => (b.ID == 1) || (b.ID == 4))));
+                }
+                catch (Exception ex)
+                {
+                    HandleException(ex);
+                }
             }
         }
 

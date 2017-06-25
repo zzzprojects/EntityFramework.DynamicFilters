@@ -891,7 +891,7 @@ namespace EntityFramework.DynamicFilters
                 //  errors if we don't do that now.
                 if (value == null)
                 {
-                    if (filterNameAndParam.Item2 == DynamicFilterConstants.FILTER_DISABLED_NAME)
+                    if ((filterNameAndParam.Item2 == DynamicFilterConstants.FILTER_DISABLED_NAME) && CanRemoveFilterDisabledConditionFromQuery(context))
                     {
                         //  This is the "is disabled" param and the filter is not disabled.  There are cases where
                         //  including the "OR (@DynamicFilterParam_1 IS NOT NULL)" clause causes problems with
@@ -918,7 +918,7 @@ namespace EntityFramework.DynamicFilters
                         //  Generic collection.  The EF query created for this collection was an '=' condition.
                         //  We need to convert this into an 'in' clause so that we can dynamically set the
                         //  values in the collection.
-                        SetParameterList(value as IEnumerable, param, command, IsOracle(context), IsMySql(context));
+                        SetParameterList(value as IEnumerable, param, command, context);
                         if (context.Database.Log != null)
                             context.Database.Log(string.Format("Manually replaced single parameter value with list, new SQL=\r\n{0}", command.CommandText));
                     }
@@ -980,10 +980,13 @@ namespace EntityFramework.DynamicFilters
         /// <param name="paramValueCollection"></param>
         /// <param name="param"></param>
         /// <param name="command"></param>
-        /// <param name="isOracle"></param>
-        /// <param name="isMySql"></param>
-        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command, bool isOracle, bool isMySql)
+        /// <param name="context"></param>
+        private static void SetParameterList(IEnumerable paramValueCollection, DbParameter param, DbCommand command, DbContext context)
         {
+            bool isOracle = IsOracle(context);
+            bool isMySql = IsMySql(context);
+            var canChangeCommandText = CanChangeSQLCommandText(context);
+
             int prevStartIndex = 0;
             int paramStartIdx;
             bool isNotCondition = false;
@@ -1031,6 +1034,9 @@ namespace EntityFramework.DynamicFilters
                 }
 
                 inCondition.Append(")");
+
+                if (!canChangeCommandText)
+                    throw new ApplicationException("This Database Provider does not support modifing the DbCommand.CommandText property - IEnumerable values cannot be set");
 
                 command.CommandText = string.Concat(command.CommandText.Substring(0, startIdx),
                                                     inCondition,
@@ -1156,6 +1162,43 @@ namespace EntityFramework.DynamicFilters
         public static bool IsMySql(this DbContext context)
         {
             return context.Database.Connection.GetType().FullName.Contains("MySql");
+        }
+
+        public static bool IsSQLCE(this DbContext context)
+        {
+            return (context.Database.Connection.GetType().FullName.Contains("SqlServerCe"));
+        }
+
+        /// <summary>
+        /// Returns true if the database provider allows changing the sql command text.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private static bool CanChangeSQLCommandText(DbContext context)
+        {
+            if (IsSQLCE(context))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// True if we can remove unnecessary disable filter conditions.
+        /// The Oracle DevArt driver does not allow removing parameters so need to prevent it in this case
+        /// (see https://github.com/jcachat/EntityFramework.DynamicFilters/issues/114)
+        /// or if the driver does not support modifying the Command Text (i.e. SQL CE)
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private static bool CanRemoveFilterDisabledConditionFromQuery(DbContext context)
+        {
+            if (!CanChangeSQLCommandText(context))
+                return false;
+
+            if (IsOracle(context) && context.Database.Connection.GetType().FullName.Contains("DevArt"))
+                return false;
+
+            return true;
         }
 
         #endregion
