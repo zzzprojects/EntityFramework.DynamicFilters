@@ -43,3 +43,4 @@
 2.6: Fixed issue with filter not applied when defined on derived class involved in TPH.  Fixed filter not applied to navigation property when nav prop is a TPT entity.  Fixed issue with filter on nullable property specified as null via parameter (not delegate).
 2.7: Fixed exception when accessing class in deep inheritance graph
 2.8: Support properties & method references inside filter linq expressions (as constant values, not dynamic), Support child property filters in Oracle 12, Fixed issues caused by removing "filter is disabled" claused during sql interception on SQL CE and Oracle DevArt dotConnect providers
+2.8.1: Fixed case problem when checking for Devart Oracle provider

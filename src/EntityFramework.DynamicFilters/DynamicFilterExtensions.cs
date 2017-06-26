@@ -1195,7 +1195,7 @@ namespace EntityFramework.DynamicFilters
             if (!CanChangeSQLCommandText(context))
                 return false;
 
-            if (IsOracle(context) && context.Database.Connection.GetType().FullName.Contains("DevArt"))
+            if (IsOracle(context) && context.Database.Connection.GetType().FullName.ToLower().Contains("devart"))
                 return false;
 
             return true;
