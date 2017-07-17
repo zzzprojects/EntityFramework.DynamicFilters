@@ -60,6 +60,7 @@
     <Compile Include="DynamicFilterDefinition.cs" />
     <Compile Include="DynamicFilterExtensions.cs" />
     <Compile Include="DynamicFilterInterceptor.cs" />
+    <Compile Include="DynamicFilterOptions.cs" />
     <Compile Include="DynamicFilterParameters.cs" />
     <Compile Include="DynamicFilterQueryVisitorOld.cs" />
     <Compile Include="DynamicFilterQueryVisitorSSpace.cs" />

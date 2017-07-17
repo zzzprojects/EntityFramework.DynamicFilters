@@ -9,10 +9,10 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
 ## Changes in Version 2
---------------------
 * Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  Also includes support for Any() and All() on child collections.
 * Filter parameter values can now reference the current DbContext instance.  See [Parameter Expressions](#parameter-expressions).
 * Filters can be enabled conditionally via a delegate just like parameter values.  See [Conditionally Enabling Filters](#conditionally-enabling-filters).
+* Added options to filters to control how/when they are applied to entities.  See [Filter Options](#filter-options)
 
 Putting this all together, you can now do the following:
 ```csharp
@@ -22,12 +22,10 @@ modelBuilder.EnableFilter("UserOrg", (MyContext ctx) => !ctx.UserIsAdmin);
 This will create a filter to restrict queries on the Notes table to only those records made by people in the current users Organization.  The filter will only be enabled if the current user is not an Administrator.  And both expressions access properties in the current DbContext instance.
 
 ## Installation
------------------------
 The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
 
 
 ## Defining Filters
------------------------
 
 Filters are defined in DbContext.OnModelCreating().  
 
@@ -48,14 +46,13 @@ modelBuilder.Filter("Notes_CurrentUser", (Note n) => n.PersonID, () => GetPerson
 In this example, the Note entity is "owned" by the current user.  This filter will ensure that all queries made for Note entities will always be restricted to the current user and it will not be possible for users to retrieve notes for other users.
 
 ### Parameter Expressions
-As of Version 2, parameter delegate expressions can be specified as either a Func<object> (as shown above) or a Func<DbContext, object> like this:
+As of Version 2, parameter delegate expressions can be specified as either a `Func<object>` (as shown above) or a `Func<DbContext, object>` like this:
 ```csharp
 modelBuilder.Filter("Notes_CurrentUser", (Note n) => n.PersonID, (MyContext ctx) => ctx.CurrentPersonID);
 ```
 This allows the parameter value expressions to reference the current DbContext instance.  In this example, the value of the parameter will be set to the value of the CurrentPersonID property in the current MyContext instance.
 
 ## Linq Filters
------------------------
 
 Filters can also be created using linq conditions and with multiple parameters.
 
@@ -67,7 +64,7 @@ modelBuilder.Filter("BlogEntryFilter",
                     () => false);
 ```
 
-The linq syntax is somewhat limited to boolean expressions but does support the Contains() operator on IEnumerable<<T>> to generate sql "in" clauses:
+The linq syntax is somewhat limited to boolean expressions but does support the Contains() operator on `Enumerable<T>` to generate sql "in" clauses:
 ```csharp
 var values = new List<int> { 1, 2, 3, 4, 5 };
 modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) => valueList.Contains(b.IntValue.Value), () => values);
@@ -76,7 +73,6 @@ modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) => valueL
 If you require support for additional linq operators, please create an [issue](https://github.com/jcachat/EntityFramework.DynamicFilters/issues).
 
 ## Changing Filter Parameter Values
-------------------------------
 Within a single DbContext instance, filter parameter values can also be changed.  These changes are scoped to only that DbContext instance and do not affect any other DbContext instances.
 
 To change the Soft Delete filter shown above to return only deleted records, you could do this:
@@ -89,13 +85,12 @@ If the filter contains multiple parameters, you must specify the name of the par
 context.SetFilterScopedParameterValue("BlogEntryFilter", "accountID", 12345);
 ```
 
-Parameter values can be set to a specific value or delegate expressions (Func<object> or <Func<DbContext, object>).
+Parameter values can be set to a specific value or delegate expressions (`Func<object>` or `Func<DbContext, object>`).
 
 Global parameter values can also be changed using the SetFilterGlobalParameterValue extension methods.
 
 
 ## Enabling and Disabling Filters
-------------------------------
 To disable a filter, use the DisableFilter extension method like this:
 ```csharp
 context.DisableFilter("IsDeleted");
@@ -145,16 +140,43 @@ modelBuilder.EnableFilter("BlogEntryFilter", () => !UserIsAdmin(Thread.CurrentPr
 ```
 creates a filter on BlogEntry records to restrict to only the current uses AccountID.  But the filter will only be enabled if the user is not an Admin user.
 
-This expression can be specified as either a Func<object> or a Func<DbContext, object> expression just like parameter value expressions.
+This expression can be specified as either a `Func<object>` or a `Func<DbContext, object>` expression just like parameter value expressions.
+
+### Filter Options
+As of Version 2.9, fluent-style options have been added to allow you to control how filters are applied to entities.  The following options are available:
+
+* SelectEntityTypeCondition: Allows you to specify a delegate that will be called for each Type that is found to match the filter.  You can inspect the type and return true/false to indicate if this filter should be applied to this specific Type.  This allows you create a filter on an Interface but then not apply it to specific entities. 
+
+    The following example creates a filter on all entities implementing ISoftDelete except for entities implementing the IExceptMe interface.
+   ```
+   modelBuilder.Filter("ISoftDelete", (ISoftDelete d, bool isDeleted) => d.IsDeleted == isDeleted, false, opt => opt.SelectEntityTypeCondition(type => !typeof(IExceptMe).IsAssignableFrom(type)));
+   ```
+   
+* ApplyToChildProperties: When set to false, the filter will only be applied to the main entity.  It will not be applied to any child properties.
+
+   Default is true (filter is applied to all entities in the query).
+   
+   The following filter will only be applied to the main entity of a query - not to any child properties:
+   ```
+   modelBuilder.Filter("ISoftDelete", (ISoftDelete d, bool isDeleted) => d.IsDeleted == isDeleted, false, opt => opt.ApplyToChildProperties(false));
+   ```
+
+* ApplyRecursively: When set to false, the filter will not be applied recursively.  Once it has been applied to a parent entity, it will not be applied again.  If an entity contains 2 child properties that match the same filter, it will be applied to both properties.  But it would then not be applied to any child properties of either of those entities.
+   
+   Default is true - all filters are applied recursively.
+   
+   The following filter will not be applied recursively:
+   ```
+   modelBuilder.Filter("ISoftDelete", (ISoftDelete d, bool isDeleted) => d.IsDeleted == isDeleted, false, opt => opt.ApplyRecursively(false));
+   ```
+
 
 ## Oracle Support
---------------
 Oracle is supported using the [Official Oracle ODP.NET, Managed Entity Framework Driver](https://www.nuget.org/packages/Oracle.ManagedDataAccess.EntityFramework) with the following limitations:
 * The Oracle driver does not support generating an "in" expression.  Using the "Contains" operator will result in outputting a series of equals/or expressions.
 * Using a DateTime value tends to throw an exception saying "The member with identity 'Precision' does not exist in the metadata collection."  This seems to be a bug in the Oracle driver.  Using a DateTimeOffset instead of a DateTime works correctly (which also then uses the Oracle TIMESTAMP datatype instead of DATE).
 
 ## SQL Server CE Support
---------------
 SQL Server CE is supported with the following limitations:
 * The SQL Server CE provider does not support modifying the CommandText property during SQL interception.  That is necessary in order to do some of the dynamic parameter value replacements.  This means that Contains(IEnumerable<T>) is not supported on SQL Server CE and will throw an exception.
 * SQL Server CE does not support the "like @value+'%'" syntax (see https://stackoverflow.com/questions/1916248/how-to-use-parameter-with-like-in-sql-server-compact-edition).  So string.StartsWith(@value) is not supported and will throw a Format exception.

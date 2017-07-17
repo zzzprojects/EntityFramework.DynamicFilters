@@ -7,24 +7,23 @@ namespace EntityFramework.DynamicFilters
     internal class DynamicFilterConvention : Convention
     {
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="filterName"></param>
         /// <param name="entityType"></param>
         /// <param name="predicate"></param>
         /// <param name="columnName"></param>
-        /// <param name="selectEntityTypeCondition">If not null, this delegate should return true if the filter should be applied to the given entity Type.
-        /// False if not.  Allows additional logic to be applied to determine if the filter should be applied to an Entity of type "TEntity".
-        /// i.e. To apply the filter to all entities of a particular interface but not if those entities also implement another interface.</param>
+        /// <param name="config">Options for how and when to apply this filter</param>
         public DynamicFilterConvention(string filterName, Type entityType, LambdaExpression predicate,
-                                        string columnName, Func<Type, bool> selectEntityTypeCondition)
+                                        string columnName, Func<DynamicFilterConfig, DynamicFilterOptions> config)
         {
+            var options = (config == null) ? new DynamicFilterOptions() : config(new DynamicFilterConfig());
+
             var id = Guid.NewGuid();
 
-            var configuration = Types().Where(t => entityType.IsAssignableFrom(t) && ((selectEntityTypeCondition == null) || selectEntityTypeCondition(t)));
+            var configuration = Types().Where(t => entityType.IsAssignableFrom(t) && ((options.SelectEntityTypeCondition == null) || options.SelectEntityTypeCondition(t)));
             configuration.Configure(ctc =>
             {
-                var filterDefinition = new DynamicFilterDefinition(id, filterName, predicate, columnName, ctc.ClrType);
+                var filterDefinition = new DynamicFilterDefinition(id, filterName, predicate, columnName, ctc.ClrType, options);
 
                 ctc.HasTableAnnotation(filterDefinition.AttributeName, filterDefinition);
             });

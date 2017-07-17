@@ -19,6 +19,10 @@ namespace EntityFramework.DynamicFilters
         private readonly DbContext _DbContext;
         private readonly ObjectContext _ObjectContext;
 
+        //  List of filters that have been applied.  Used to tell if we have already applied a filter that is not
+        //  allowed to be applied recursively.
+        private List<string> _AppliedFilters = new List<string>();
+
         /// <summary>
         /// Returns true if the database does not support the DbExpression.Element() method - at least in the
         /// context that we try to use it when applying a filter to a child entity.
@@ -58,8 +62,8 @@ namespace EntityFramework.DynamicFilters
             IEnumerable<DynamicFilterDefinition> scanFilterList = null;
             var scanExp = expression.Argument as DbScanExpression;
             if (scanExp != null)
-                scanFilterList = FindFiltersForEntitySet(scanExp.Target.ElementType.MetadataProperties);
-            var ofTypeFilterList = FindFiltersForEntitySet(expression.OfType.EdmType.MetadataProperties);
+                scanFilterList = FindFiltersForEntitySet(scanExp.Target.ElementType.MetadataProperties, true);
+            var ofTypeFilterList = FindFiltersForEntitySet(expression.OfType.EdmType.MetadataProperties, true);
             var filtersToApply = ofTypeFilterList.Where(f => (scanFilterList == null) || !scanFilterList.Any(f2 => f2.ID == f.ID));
 
             var baseResult = base.Visit(expression);
@@ -91,8 +95,7 @@ namespace EntityFramework.DynamicFilters
             //  This method will only be called for the initial entity.  Any other references to other entities will be
             //  handled by the Visit(DbPropertyExpression) - this includes filter references and includes.
 
-            var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties);
-            System.Diagnostics.Debug.Print("  Found {0} filters", filterList.Count());
+            var filterList = FindFiltersForEntitySet(expression.Target.ElementType.MetadataProperties, true);
 
             var baseResult = base.Visit(expression);
             if (filterList.Any())
@@ -129,7 +132,7 @@ namespace EntityFramework.DynamicFilters
                 var targetEntityType = navProp.ToEndMember.GetEntityType();
 
                 var containers = _ObjectContext.MetadataWorkspace.GetItems<EntityContainer>(DataSpace.CSpace).First();
-                var filterList = FindFiltersForEntitySet(targetEntityType.MetadataProperties);
+                var filterList = FindFiltersForEntitySet(targetEntityType.MetadataProperties, false);
 
                 if (filterList.Any())
                 {
@@ -265,7 +268,7 @@ namespace EntityFramework.DynamicFilters
             return baseResult;
         }
 
-        private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties)
+        private IEnumerable<DynamicFilterDefinition> FindFiltersForEntitySet(ReadOnlyMetadataCollection<MetadataProperty> metadataProperties, bool isMainEntity)
         {
             var configuration = metadataProperties.FirstOrDefault(p => p.Name == "Configuration")?.Value;
             if (configuration == null)
@@ -278,7 +281,10 @@ namespace EntityFramework.DynamicFilters
             if (annotations == null)
                 return new List<DynamicFilterDefinition>();
 
-            var filterList = annotations.Select(a => a.Value as DynamicFilterDefinition).Where(a => a != null).ToList();
+            var filterList = annotations.Select(a => a.Value as DynamicFilterDefinition)
+                .Where(a => (a != null) && (isMainEntity || a.Options.ApplyToChildProperties))
+                .Where(a => isMainEntity || (a.Options.ApplyRecursively || !_AppliedFilters.Contains(a.FilterName)))
+                .ToList();
 
             //  Note: Prior to the switch to use CSpace (which was done to allow filters on navigation properties),
             //  we had to remove filters that exist in base EntitySets to this entity to fix issues with 
@@ -286,6 +292,9 @@ namespace EntityFramework.DynamicFilters
             //  with the actual c# models now (in CSpace) so we always have the correct filters and access to all
             //  the inherited properties that we need.
 
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("  Found {0} filters for Type {1}; isMainEntity={2}", filterList.Count, metadataProperties.FirstOrDefault(p => p.Name == "Name")?.Value, isMainEntity);
+#endif
             return filterList;
         }
 
@@ -306,6 +315,8 @@ namespace EntityFramework.DynamicFilters
                 if (processedFilterNames.Contains(filter.FilterName))
                     continue;       //  Already processed this filter - attribute was probably inherited in a base class
                 processedFilterNames.Add(filter.FilterName);
+
+                _AppliedFilters.Add(filter.FilterName);
 
                 DbExpression dbExpression;
                 if (!string.IsNullOrEmpty(filter.ColumnName))
@@ -373,7 +384,49 @@ namespace EntityFramework.DynamicFilters
             return DbExpressionBuilder.Filter(binding, newPredicate);
         }
 
-#region Extra (currently not needed) Visit calls - for debugging
+        public override DbExpression Visit(DbNewInstanceExpression expression)
+        {
+            //  Must track/reset _AppliedFilters within the scope of this call so that we correctly track the
+            //  level at which filters have been applied.
+            var filtersAppliedAtThisLevel = new List<string>(_AppliedFilters);
+
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbNewInstanceExpression): {0}, # AppliedFilters={1}", expression, _AppliedFilters.Count);
+#endif
+            var result = base.Visit(expression);
+
+            _AppliedFilters = filtersAppliedAtThisLevel;
+
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbNewInstanceExpression): (after base.Visit()) {0}, # AppliedFilters={1}", expression, _AppliedFilters.Count);
+#endif
+
+            return result;
+        }
+
+
+        public override DbExpression Visit(DbProjectExpression expression)
+        {
+            //  Must track/reset _AppliedFilters within the scope of this call so that we correctly track the
+            //  level at which filters have been applied.
+            var filtersAppliedAtThisLevel = new List<string>(_AppliedFilters);
+
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbProjectExpression): {0}, # AppliedFilters={1}", expression, _AppliedFilters.Count);
+#endif
+
+            var result = base.Visit(expression);
+
+            _AppliedFilters = filtersAppliedAtThisLevel;
+
+#if DEBUG_VISITS
+            System.Diagnostics.Debug.Print("Visit(DbProjectExpression): (after base.Visit()) {0}, # AppliedFilters={1}", expression, _AppliedFilters.Count);
+#endif
+
+            return result;
+        }
+
+        #region Extra (currently not needed) Visit calls - for debugging
 
 #if DEBUG_VISITS
 
@@ -408,21 +461,12 @@ namespace EntityFramework.DynamicFilters
             System.Diagnostics.Debug.Print("Visit(DbLambdaExpression): {0}", expression);
             return base.Visit(expression);
         }
-        public override DbExpression Visit(DbNewInstanceExpression expression)
-        {
-            System.Diagnostics.Debug.Print("Visit(DbNewInstanceExpression): {0}", expression);
-            return base.Visit(expression);
-        }
         public override DbExpression Visit(DbParameterReferenceExpression expression)
         {
             System.Diagnostics.Debug.Print("Visit(DbParameterReferenceExpression): {0}", expression);
             return base.Visit(expression);
         }
-        public override DbExpression Visit(DbProjectExpression expression)
-        {
-            System.Diagnostics.Debug.Print("Visit(DbProjectExpression): {0}", expression);
-            return base.Visit(expression);
-        }
+
         public override DbExpression Visit(DbRelationshipNavigationExpression expression)
         {
             System.Diagnostics.Debug.Print("Visit(DbRelationshipNavigationExpression): {0}", expression);

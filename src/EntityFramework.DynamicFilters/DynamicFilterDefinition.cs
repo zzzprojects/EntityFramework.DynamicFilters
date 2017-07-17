@@ -29,15 +29,18 @@ namespace EntityFramework.DynamicFilters
 
         public Type CLRType { get; private set; }
 
+        public DynamicFilterOptions Options { get; private set; }
+
         public string AttributeName { get { return string.Concat(DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX, DynamicFilterConstants.DELIMETER, CLRType.Name, DynamicFilterConstants.DELIMETER, FilterName); } }
 
-        internal DynamicFilterDefinition(Guid id, string filterName, LambdaExpression predicate, string columnName, Type clrType)
+        internal DynamicFilterDefinition(Guid id, string filterName, LambdaExpression predicate, string columnName, Type clrType, DynamicFilterOptions options)
         {
             ID = id;
             FilterName = filterName;
             Predicate = predicate;
             ColumnName = columnName;
             CLRType = clrType;
+            Options = options;
         }
 
         #region Filter Name mapping

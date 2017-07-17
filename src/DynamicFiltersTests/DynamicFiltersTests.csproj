@@ -100,6 +100,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AccountTests.cs" />
+    <Compile Include="OptionsTests.cs" />
     <Compile Include="ChildCollectionFiltersTests.cs" />
     <Compile Include="NavigationPropertyTests2.cs" />
     <Compile Include="PropertiesInExpressionTests.cs" />

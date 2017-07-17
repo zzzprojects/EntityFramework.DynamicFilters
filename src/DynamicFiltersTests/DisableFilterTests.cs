@@ -342,7 +342,7 @@ namespace DynamicFiltersTests
                 modelBuilder.Filter("EntityHFilter", (EntityH h, int value) => h.ID < value, () => 5);
                 modelBuilder.DisableFilterGlobally("EntityHFilter");
 
-                modelBuilder.Filter("ISomethingFilter", (ISomething t, int id) => t.ID < id, () => 5, type => !typeof(IOtherthing).IsAssignableFrom(type));
+                modelBuilder.Filter("ISomethingFilter", (ISomething t, int id) => t.ID < id, () => 5, o => o.SelectEntityTypeCondition(type => !typeof(IOtherthing).IsAssignableFrom(type)));
                 modelBuilder.Filter("IOtherthingFilter", (IOtherthing t, int id) => t.ID == id || t.OwnerID > id, () => 5);
             }
 
