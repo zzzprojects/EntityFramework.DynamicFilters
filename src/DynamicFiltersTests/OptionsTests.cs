@@ -19,6 +19,9 @@ namespace DynamicFiltersTests
         {
             using (var context = new TestContext())
             {
+                if (DynamicFilterQueryVisitorCSpace.DoesNotSupportElementMethod(context))
+                    return;     //  This test requires full CSpace support (Oracle 11 does not support this)
+
                 var list = context.EntityASet.Include(a => a.Children).ToList();
 
                 Assert.IsTrue((list.Count == 1) && (list.Single().Children.Count == 2));
@@ -30,6 +33,9 @@ namespace DynamicFiltersTests
         {
             using (var context = new TestContext())
             {
+                if (DynamicFilterQueryVisitorCSpace.DoesNotSupportElementMethod(context))
+                    return;     //  This test requires full CSpace support (Oracle 11 does not support this)
+
                 var list = context.EntityBSet.Include(x => x.Children.Select(y => y.Children)).ToList();
 
                 Assert.IsTrue(list.Count == 2);
@@ -47,6 +53,9 @@ namespace DynamicFiltersTests
         {
             using (var context = new TestContext())
             {
+                if (DynamicFilterQueryVisitorCSpace.DoesNotSupportElementMethod(context))
+                    return;     //  This test requires full CSpace support (Oracle 11 does not support this)
+
                 var list = context.EntityCSet.Include(x => x.Children.Select(y => y.Children)).ToList();
 
                 Assert.IsTrue(list.All(x => (x.ID == 1)) && (list.Single().Children.Count == 2));
@@ -64,6 +73,9 @@ namespace DynamicFiltersTests
             //  are filtered and that neither of their child collections are filtered.
             using (var context = new TestContext())
             {
+                if (DynamicFilterQueryVisitorCSpace.DoesNotSupportElementMethod(context))
+                    return;     //  This test requires full CSpace support (Oracle 11 does not support this)
+
                 var list = context.EntityDSet
                     .Include(x => x.Children1.Select(y => y.Children))
                     .Include(x => x.Children2.Select(y => y.Children))

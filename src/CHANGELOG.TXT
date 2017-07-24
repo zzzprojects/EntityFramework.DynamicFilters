@@ -45,3 +45,4 @@
 2.8: Support properties & method references inside filter linq expressions (as constant values, not dynamic), Support child property filters in Oracle 12, Fixed issues caused by removing "filter is disabled" claused during sql interception on SQL CE and Oracle DevArt dotConnect providers
 2.8.1: Fixed case problem when checking for Devart Oracle provider
 2.9: Added filter options to turn off applying filters to child properties or to prevent them from being applied recursively
+2.9.1: Changed Oracle version check to use 'product_component_version' instead of 'v$instance' which is restricted to admins

@@ -1150,7 +1150,7 @@ namespace EntityFramework.DynamicFilters
 
             return _OracleInstanceVersions.GetOrAdd(context.Database.Connection.ConnectionString, k =>
             {
-                var versionStr = context.Database.SqlQuery<string>("select version from v$instance").FirstOrDefault();
+                var versionStr = context.Database.SqlQuery<string>("select version from product_component_version where product like '%Database%'").FirstOrDefault();
 
                 return new Version(string.Join(".", versionStr.Split('.').Take(4)));
             });
