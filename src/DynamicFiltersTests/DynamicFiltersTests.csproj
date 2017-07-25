@@ -110,7 +110,7 @@
     <Compile Include="EffortTests.cs" />
     <Compile Include="BitwiseOperatorTests.cs" />
     <Compile Include="ChildPropertyFiltersTests.cs" />
-    <Compile Include="StartsWithTests.cs" />
+    <Compile Include="StringFunctionsTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="DataTypeTests.cs" />
     <Compile Include="DisableFilterTests.cs" />

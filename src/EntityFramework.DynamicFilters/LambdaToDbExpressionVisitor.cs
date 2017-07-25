@@ -491,10 +491,16 @@ namespace EntityFramework.DynamicFilters
             switch (node.Method.Name)
             {
                 case "Contains":
-                    expression = MapContainsExpression(node);
+                    if (node.Method.DeclaringType == typeof(string))
+                        expression = MapStringLikeExpression(node, false, false);
+                    else
+                        expression = MapEnumerableContainsExpression(node);
                     break;
                 case "StartsWith":
-                    expression = MapStartsWithExpression(node);
+                    expression = MapStringLikeExpression(node, true, false);
+                    break;
+                case "EndsWith":
+                    expression = MapStringLikeExpression(node, false, true);
                     break;
                 case "Any":
                 case "All":
@@ -515,7 +521,7 @@ namespace EntityFramework.DynamicFilters
             return expression;
         }
         
-        private Expression MapContainsExpression(MethodCallExpression node)
+        private Expression MapEnumerableContainsExpression(MethodCallExpression node)
         {
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
@@ -625,7 +631,7 @@ namespace EntityFramework.DynamicFilters
             return !entityConnection.StoreConnection.GetType().FullName.Contains("Oracle");
         }
 
-        private Expression MapStartsWithExpression(MethodCallExpression node)
+        private Expression MapStringLikeExpression(MethodCallExpression node, bool matchStart, bool matchEnd)
         {
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
 
@@ -642,7 +648,12 @@ namespace EntityFramework.DynamicFilters
                 if ((constantExpression == null) || (constantExpression.Value == null))
                     throw new NullReferenceException("Parameter to StartsWith cannot be null");
 
-                dbExpression = DbExpressionBuilder.Like(srcExpression, DbExpressionBuilder.Constant(constantExpression.Value.ToString() + "%"));
+                string value = matchStart ? "" : "%";
+                value += constantExpression.Value.ToString();
+                if (!matchEnd)
+                    value += "%";
+
+                dbExpression = DbExpressionBuilder.Like(srcExpression, DbExpressionBuilder.Constant(value));
             }
             else
             {
@@ -652,7 +663,11 @@ namespace EntityFramework.DynamicFilters
                 //  It works but generates some crazy conditions using charindex which I don't think will use indexes as well as "like"...
                 //dbExpression = DbExpressionBuilder.Equal(DbExpressionBuilder.True, srcExpression.StartsWith(argExpression));
 
-                dbExpression = DbExpressionBuilder.Like(srcExpression, argExpression.Concat(DbExpressionBuilder.Constant("%")));
+                DbExpression value = matchStart ? argExpression : DbExpressionBuilder.Constant("%").Concat(argExpression);
+                if (!matchEnd)
+                    value = value.Concat(DbExpressionBuilder.Constant("%"));
+
+                dbExpression = DbExpressionBuilder.Like(srcExpression, value);
             }
 
             MapExpressionToDbExpression(expression, dbExpression);

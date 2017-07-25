@@ -96,6 +96,17 @@ namespace DynamicFiltersTests
             }
         }
 
+        //  Tests issue #117
+        [TestMethod]
+        public void ChildCollection_AnyContains()
+        {
+            using (var context = new TestContext())
+            {
+                var list = context.EntityISet.ToList();
+                Assert.IsTrue((list.Count == 1) && list.All(a => (a.ID == 1)));
+            }
+        }
+
         #region Models
 
         public class EntityBase
@@ -211,6 +222,19 @@ namespace DynamicFiltersTests
             public bool IsDeleted { get; set; }
         }
 
+        public class EntityI : EntityBase
+        {
+            public ICollection<EntityIChild> Children { get; set; }
+        }
+
+        public class EntityIChild : EntityBase
+        {
+            public int ParentID { get; set; }
+            public EntityI Parent { get; set; }
+
+            public string ChildValue { get; set; }
+        }
+
         #endregion
 
         #region TestContext
@@ -231,6 +255,8 @@ namespace DynamicFiltersTests
             public DbSet<EntityFChild> EntityFChildSet { get; set; }
             public DbSet<EntityG> EntityGSet { get; set; }
             public DbSet<EntityH> EntityHSet { get; set; }
+            public DbSet<EntityI> EntityISet { get; set; }
+            public DbSet<EntityIChild> EntityIChildSet { get; set; }
 
             protected override void OnModelCreating(DbModelBuilder modelBuilder)
             {
@@ -265,6 +291,8 @@ namespace DynamicFiltersTests
                     });
 
                 modelBuilder.Filter("ISoftDeleteFilter", (ISoftDelete d) => d.IsDeleted, false);
+
+                modelBuilder.Filter("EntityIFilter", (EntityI i, string val) => i.Children.Any(c => c.ChildValue.Contains(val)), () => "23");
 
                 //  TODO: Count()
                 //  TODO: Count([predicate])
@@ -359,6 +387,25 @@ namespace DynamicFiltersTests
                     {
                         new EntityH { ID = 3, IsDeleted = false },
                         new EntityH { ID = 4, IsDeleted = true },
+                    }
+                });
+
+                EntityISet.Add(new EntityI
+                {
+                    ID = 1,
+                    Children = new List<EntityIChild>
+                    {
+                        new EntityIChild { ID = 1, ChildValue = "1234" },
+                        new EntityIChild { ID = 2, ChildValue = "5678" },
+                    }
+                });
+                EntityISet.Add(new EntityI
+                {
+                    ID = 2,
+                    Children = new List<EntityIChild>
+                    {
+                        new EntityIChild { ID = 3, ChildValue = "abcd" },
+                        new EntityIChild { ID = 4, ChildValue = "edfg" },
                     }
                 });
 
