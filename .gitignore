@@ -1,3 +1,7 @@
+*.pfx
+*.snk
+Z.Lab/
+
 # Search Cache dump files
 Cache-*-*-*-*-*
 

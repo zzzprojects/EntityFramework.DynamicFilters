@@ -683,7 +683,9 @@ namespace EntityFramework.DynamicFilters
                 throw new ApplicationException("Any function call has more than 2 arguments");
 
             //  Visit the first argument so that we can get the DbPropertyExpression which is the source of the method call.
-            var sourceExpression = Visit(node.Arguments[0]);
+            var argument = node.Arguments[0];
+            argument = RemoveConvert(argument);
+            var sourceExpression = Visit(argument);
             var collectionExpression = GetDbExpressionForExpression(sourceExpression);
 
             //  Visit this DbExpression using the QueryVisitor in case it has it's own filters that need to be applied.
@@ -722,6 +724,19 @@ namespace EntityFramework.DynamicFilters
 
             MapExpressionToDbExpression(node, dbExpression);
             return node;
+        }
+
+        /// <summary>An Expression extension method that removes the convert described by @this.</summary>
+        /// <param name="this">The @this to act on.</param>
+        /// <returns>An Expression.</returns>
+        internal static Expression RemoveConvert(Expression @this)
+        {
+            while (@this.NodeType == ExpressionType.Convert || @this.NodeType == ExpressionType.ConvertChecked)
+            {
+                @this = ((UnaryExpression)@this).Operand;
+            }
+
+            return @this;
         }
 
         private DbConstantExpression CreateConstantExpression(object value)
