@@ -47,3 +47,4 @@
 2.9: Added filter options to turn off applying filters to child properties or to prevent them from being applied recursively
 2.9.1: Changed Oracle version check to use 'product_component_version' instead of 'v$instance' which is restricted to admins
 2.10: Added support for string.Contains and .EndsWith
+3.0: Added support ToLower && ToUpper; Modified signed key
