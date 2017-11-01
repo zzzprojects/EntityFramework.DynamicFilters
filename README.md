@@ -1,3 +1,13 @@
+## Library Powered By
+
+This library is powered by [Entity Framework Extensions](http://entityframework-extensions.net/?z=github&y=entityframework-dynamicfilters)
+
+<a href="http://entityframework-extensions.net/?z=github&y=entityframework-dynamicfilters">
+<kbd>
+<img src="https://zzzprojects.github.io/images/logo/entityframework-extensions-pub.jpg" alt="Entity Framework Extensions" />
+</kbd>
+</a>
+
 # Dynamic Global Filters for Entity Framework
 
 Create global and scoped filters for Entity Framework queries.  The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
