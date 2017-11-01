@@ -18,6 +18,9 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
+## Installation
+The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
+
 ## Changes in Version 2
 * Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  Also includes support for Any() and All() on child collections.
 * Filter parameter values can now reference the current DbContext instance.  See [Parameter Expressions](#parameter-expressions).
@@ -30,9 +33,6 @@ modelBuilder.Filter("NotesForCompany", (Note n, int orgID) => n.Person.Organizat
 modelBuilder.EnableFilter("UserOrg", (MyContext ctx) => !ctx.UserIsAdmin);
 ```
 This will create a filter to restrict queries on the Notes table to only those records made by people in the current users Organization.  The filter will only be enabled if the current user is not an Administrator.  And both expressions access properties in the current DbContext instance.
-
-## Installation
-The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
 
 
 ## Defining Filters
