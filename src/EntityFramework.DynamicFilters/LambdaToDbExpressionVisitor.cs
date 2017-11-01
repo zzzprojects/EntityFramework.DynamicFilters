@@ -72,7 +72,7 @@ namespace EntityFramework.DynamicFilters
             _Filter = filter;
             _Binding = binding;
             _DbContext = dbContext;
-            _ObjectContext = ((IObjectContextAdapter)dbContext).ObjectContext;
+            _ObjectContext = ((IObjectContextAdapter) dbContext).ObjectContext;
             _DataSpace = dataSpace;
         }
 
@@ -148,8 +148,8 @@ namespace EntityFramework.DynamicFilters
 
                     case ExpressionType.Coalesce:
                         //  EF does not expose the "coalesce" function.  So best we can do is a case statement.  Issue #77.
-                        var whenExpressions = new List<DbExpression>() { DbExpressionBuilder.IsNull(leftExpression) };
-                        var thenExpressions = new List<DbExpression>() { rightExpression };
+                        var whenExpressions = new List<DbExpression>() {DbExpressionBuilder.IsNull(leftExpression)};
+                        var thenExpressions = new List<DbExpression>() {rightExpression};
                         dbExpression = DbExpressionBuilder.Case(whenExpressions, thenExpressions, leftExpression);
                         break;
 
@@ -217,25 +217,25 @@ namespace EntityFramework.DynamicFilters
             }
 
             if (type == typeof(byte[]))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromBinary((byte[])node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromBinary((byte[]) node.Value));
             else if (type == typeof(bool))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromBoolean((bool?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromBoolean((bool?) node.Value));
             else if (type == typeof(byte))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromByte((byte?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromByte((byte?) node.Value));
             else if (type == typeof(DateTime))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTime((DateTime?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTime((DateTime?) node.Value));
             else if (type == typeof(DateTimeOffset))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTimeOffset((DateTimeOffset?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromDateTimeOffset((DateTimeOffset?) node.Value));
             else if (type == typeof(decimal))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromDecimal((decimal?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromDecimal((decimal?) node.Value));
             else if (type == typeof(double))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromDouble((double?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromDouble((double?) node.Value));
             else if (type == typeof(Guid))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromGuid((Guid?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromGuid((Guid?) node.Value));
             else if (type == typeof(Int16))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt16((Int16?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt16((Int16?) node.Value));
             else if (type == typeof(Int32))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32?) node.Value));
             else if (type.IsEnum)
             {
                 if (_DataSpace == DataSpace.CSpace)
@@ -244,14 +244,14 @@ namespace EntityFramework.DynamicFilters
                     MapExpressionToDbExpression(expression, DbExpressionBuilder.Constant(typeUsage, node.Value));
                 }
                 else
-                    MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32)node.Value));
+                    MapExpressionToDbExpression(expression, DbConstantExpression.FromInt32((Int32) node.Value));
             }
             else if (type == typeof(Int64))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromInt64((Int64?) node.Value));
             else if (type == typeof(float))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromSingle((float?)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromSingle((float?) node.Value));
             else if (type == typeof(string))
-                MapExpressionToDbExpression(expression, DbConstantExpression.FromString((string)node.Value));
+                MapExpressionToDbExpression(expression, DbConstantExpression.FromString((string) node.Value));
             else
                 throw new NotImplementedException(string.Format("Unhandled Type of {0} for Constant value {1} in LambdaToDbExpressionVisitor.VisitConstant", node.Type.Name, node.Value ?? "null"));
 
@@ -276,20 +276,20 @@ namespace EntityFramework.DynamicFilters
             //  If the value should change or be re-evaluated each time the query is executed, it should
             //  be made a parameter of the filter!
             //  See https://github.com/jcachat/EntityFramework.DynamicFilters/issues/109
-            if ((node.Expression is ConstantExpression) ||                                      //  class field/property
-                ((node.Expression == null) && (node.NodeType == ExpressionType.MemberAccess)))  //  static field/property
+            if ((node.Expression is ConstantExpression) || //  class field/property
+                ((node.Expression == null) && (node.NodeType == ExpressionType.MemberAccess))) //  static field/property
             {
                 //  Class fields & properties must reference the container (the class instance that contains the field/property)
-                object container = (node.Expression != null) ? ((ConstantExpression)node.Expression).Value : null;
+                object container = (node.Expression != null) ? ((ConstantExpression) node.Expression).Value : null;
 
-                if (node.Member is FieldInfo)               //  regular field property (not a get accessor)
+                if (node.Member is FieldInfo) //  regular field property (not a get accessor)
                 {
-                    var value = ((FieldInfo)node.Member).GetValue(container);
+                    var value = ((FieldInfo) node.Member).GetValue(container);
                     return VisitConstant(Expression.Constant(value));
                 }
-                else if (node.Member is PropertyInfo)       //  get accessor
+                else if (node.Member is PropertyInfo) //  get accessor
                 {
-                    object value = ((PropertyInfo)node.Member).GetValue(container, null);
+                    object value = ((PropertyInfo) node.Member).GetValue(container, null);
                     return VisitConstant(Expression.Constant(value));
                 }
                 else
@@ -400,10 +400,10 @@ namespace EntityFramework.DynamicFilters
             var expression = base.VisitParameter(node);
 
             if (node.Type.IsClass || node.Type.IsInterface)
-                return expression;      //  Ignore class or interface param
+                return expression; //  Ignore class or interface param
 
             if (_Parameters.ContainsKey(node.Name))
-                return expression;      //  Already created sql parameter for this node.Name
+                return expression; //  Already created sql parameter for this node.Name
 
             //  Create a new DbParameterReferenceExpression for this parameter.
             var param = CreateParameter(node.Name, node.Type);
@@ -482,7 +482,6 @@ namespace EntityFramework.DynamicFilters
 #if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitMethodCall: {0}", node);
 #endif
-
             //  Do not call base.VisitMethodCall(node) here because of the method that is being
             //  called has a lambdas as an argument, we need to handle it differently.  If we call the base,
             //  the visits that we do will be against the current binding - not the source of the method call.
@@ -506,6 +505,12 @@ namespace EntityFramework.DynamicFilters
                 case "All":
                     expression = MapAnyOrAllExpression(node);
                     break;
+                case "ToLower":
+                    expression = MapSimpleExpression(node, EdmFunctions.ToLower);
+                    break;
+                case "ToUpper":
+                    expression = MapSimpleExpression(node, EdmFunctions.ToUpper);
+                    break;
                 default:
                     //  Anything else is invoked and handled as a constant.  This allows us to handle user-defined methods.
                     //  If this evaluates to something that is not a constant, it will throw an exception...which is what we used to do anyway.
@@ -520,7 +525,7 @@ namespace EntityFramework.DynamicFilters
 
             return expression;
         }
-        
+
         private Expression MapEnumerableContainsExpression(MethodCallExpression node)
         {
             var expression = base.VisitMethodCall(node) as MethodCallExpression;
@@ -536,10 +541,10 @@ namespace EntityFramework.DynamicFilters
             if ((expression.Arguments.Count > 1) && (expression.Object == null))
                 collectionObjExp = expression.Arguments[0] as ParameterExpression;
             if (collectionObjExp != null)
-                argExpression = GetDbExpressionForExpression(expression.Arguments[1]);      //  IEnumerable
+                argExpression = GetDbExpressionForExpression(expression.Arguments[1]); //  IEnumerable
             else
             {
-                argExpression = GetDbExpressionForExpression(expression.Arguments[0]);      //  List, IList, ICollection
+                argExpression = GetDbExpressionForExpression(expression.Arguments[0]); //  List, IList, ICollection
                 collectionObjExp = expression.Object as ParameterExpression;
             }
 
@@ -572,13 +577,13 @@ namespace EntityFramework.DynamicFilters
                 //  Find all of the constant & parameter expressions.
                 var constantExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ConstantExpression)
-                    .Where(c => (c != null) && (c.Value != null))       //  null not supported - can only use DbConstant in "In" expression
+                    .Where(c => (c != null) && (c.Value != null)) //  null not supported - can only use DbConstant in "In" expression
                     .Select(c => CreateConstantExpression(c.Value))
                     .ToList();
                 constantExpressionList.AddRange(listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as UnaryExpression)
                     .Where(c => (c != null) && (c.Operand is ConstantExpression))
-                    .Select(c => CreateConstantExpression(((ConstantExpression)c.Operand).Value)));
+                    .Select(c => CreateConstantExpression(((ConstantExpression) c.Operand).Value)));
                 var parameterExpressionList = listExpression.Initializers
                     .Select(i => i.Arguments.FirstOrDefault() as ParameterExpression)
                     .Where(c => c != null)
@@ -629,6 +634,16 @@ namespace EntityFramework.DynamicFilters
 
             //  Oracle does not support it
             return !entityConnection.StoreConnection.GetType().FullName.Contains("Oracle");
+        }
+
+        private Expression MapSimpleExpression(MethodCallExpression node, Func<DbExpression, DbFunctionExpression> dbExpressionFactory)
+        {
+            var expression = base.VisitMethodCall(node) as MethodCallExpression;
+
+            DbExpression srcExpression = GetDbExpressionForExpression(expression.Object);
+            var dbExpression = dbExpressionFactory(srcExpression);
+            MapExpressionToDbExpression(expression, dbExpression);
+            return expression;
         }
 
         private Expression MapStringLikeExpression(MethodCallExpression node, bool matchStart, bool matchEnd)
