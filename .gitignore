@@ -1,6 +1,7 @@
 *.pfx
 *.snk
 Z.Lab/
+Z.Lab.VB/
 
 # Search Cache dump files
 Cache-*-*-*-*-*

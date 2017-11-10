@@ -458,6 +458,7 @@ namespace EntityFramework.DynamicFilters
                         MapExpressionToDbExpression(expression, DbExpressionBuilder.Not(operandExpression));
                     break;
                 case ExpressionType.Convert:
+                case ExpressionType.ConvertChecked:
                     MapExpressionToDbExpression(expression, DbExpressionBuilder.CastTo(operandExpression, TypeUsageForPrimitiveType(expression.Type)));
                     break;
                 default:
