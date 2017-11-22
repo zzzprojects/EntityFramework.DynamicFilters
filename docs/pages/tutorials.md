@@ -8,9 +8,9 @@ permalink: tutorials
 	<div class="col-md-6 col-lg-6">
 		<div class="jumbotron">
 			<h2 class="display-4">Tutorial</h2>
-			<p class="lead">EFE Tutotrial</p>
+			<p class="lead">EF Dynamic Filters Tutotrial</p>
 			<hr class="my-4">
-			<p>Start learning about how to use Entity Framework Extensions with our tutorial.</p>
+			<p>Start learning about how to use Entity Framework Dynamic Filters with our tutorial.</p>
 			<p class="lead">
 				<a class="btn btn-lg btn-z" href="overview" role="button">Learn more</a>
 			</p>
@@ -21,7 +21,7 @@ permalink: tutorials
 			<h2 class="display-4">API</h2>
 			<p class="lead">Application Program Interface</p>
 			<hr class="my-4">
-			<p>Start learning the common API of Entity Framework Extensions, and everything around it.</p>
+			<p>Start learning the common API of Entity Framework Dynamic Filters, and everything around it.</p>
 			<p class="lead">
 				<a class="btn btn-primary btn-z" href="api" role="button">Learn more</a>
 			</p>
@@ -32,7 +32,7 @@ permalink: tutorials
 			<h2 class="display-4">FAQ</h2>
 			<p class="lead">Freqently Answered Question</p>
 			<hr class="my-4">
-			<p>Start learning Entity Framework Extensions best practices and solution to the common problem you may encounter.</p>
+			<p>Start learning Entity Framework Dynamic Filters best practices and solution to the common problem you may encounter.</p>
 			<p class="lead">
 				<a class="btn btn-primary btn-z" href="faq" role="button">Learn more</a>
 			</p>
@@ -45,7 +45,7 @@ permalink: tutorials
 			<hr class="my-4">
 			<p>Start learning how to fix and handle some exception and common troubleshooting error.</p>
 			<p class="lead">
-				<a class="btn btn-primary btn-z" href="troubleshooting" role="button">Learn more</a>
+				<a class="btn btn-primary btn-z" href="problems" role="button">Learn more</a>
 			</p>
 		</div>
 	</div>

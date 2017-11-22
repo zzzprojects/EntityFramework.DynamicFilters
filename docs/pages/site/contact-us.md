@@ -14,7 +14,7 @@ We love to hear from you!
 
 ## I have a question! What should I do?
 
-The best way to ask us questions and check existing answer is on [Stack Overflow](https://stackoverflow.com/questions/tagged/entity-framework-extensions) using the `entity-framework-extensions` tag: 
+The best way to ask us questions
 
 Contact us directly:
 
@@ -23,11 +23,11 @@ Contact us directly:
 - If your message contains private information
 
 ## I think I've found a bug! What should I do?
-The best way to report an issue is using our [Issues Tracker](https://github.com/zzzprojects/EntityFramework-Extensions/issues)
+The best way to report an issue is using our [Issues Tracker](https://github.com/zzzprojects/EntityFramework.DynamicFilters/issues)
 
 Make sure to include:
 - Entity Framework Version
-- Entity Framework Extensions Version
+- Entity Framework Dynamic Filters Version
 - Database Provider
 
 Contact us directly:
@@ -37,7 +37,7 @@ Contact us directly:
 - If your message contains private information
 
 ## I think I've found a new feature! What should I do?
-The best way to request a new feature is using our [Issues Tracker](https://github.com/zzzprojects/EntityFramework-Extensions/issues)
+The best way to request a new feature is using our [Issues Tracker](https://github.com/zzzprojects/EntityFramework.DynamicFilters/issues)
 
 Contact us directly:
 
