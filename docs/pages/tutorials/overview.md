@@ -4,7 +4,7 @@ permalink: overview
 
 ## Definition
 
-**EntityFramework Dynamic Filters** is a library that Create global and scoped filters for Entity Framework queries.
+**EntityFramework Dynamic Filters** is a library that Creates global and scoped filters for Entity Framework queries.
 
 The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
 
@@ -13,8 +13,8 @@ The filters are automatically applied to every query and can be used to support 
 The library can be easily installed through <a href="/installing">NuGet</a> which will add extensions methods automatically to DbContext and DbModelBuilder classes to access **Dynamic Filters**.
 
 - Filters are defined in DbContext.OnModelCreating().
-- Filters can be created using boolean linq expressions.
-- It also support the Contains() operator to define filters.
+- Filters can be created using boolean LINQ expressions.
+- It also supports the Contains() operator to define filters.
 
 ## Enabling and Disabling Filters
 
@@ -44,7 +44,7 @@ context.EnableAllFilters();
 
 ### Specific Value
 
-Filters can be defined on a specific entity class or an interface by providing a specific value, e.g a **IsDeleted** filter created on an **ISoftDelete** interface which will automatically filter those entities by applying the condition "IsDeleted==false".
+Filters can be defined on a specific entity class or an interface by providing a specific value, e.g. an **IsDeleted** filter created on an **ISoftDelete** interface which will automatically filter those entities by applying the condition "IsDeleted==false".
 
 {% include template-example.html%} 
 {% highlight csharp %}
@@ -57,7 +57,7 @@ This filter will apply to all classes that implements ISoftDelete.
 
 ### Delegate Expressions
 
-Filter values can also be provided via a delegate/expression instead of a specific value which allows you to change the parameter value dynamically. For example, a filter can be created on the UserID and provided per http request.
+Filter values can also be provided via a delegate/expression instead of a specific value which allows you to change the parameter value dynamically. For example, a filter can be created on the UserID and provided per HTTP request.
 
 {% include template-example.html%} 
 {% highlight csharp %}
@@ -119,7 +119,7 @@ modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) =>
 
 ### Changing Parameter Values
 
-Filter parameter values can be changed easily within a DbContext instance and these changes will scoped to that instance only which will not affect other DbContext instances.
+Filter parameter values can be changed easily within a DbContext instance, and these changes will be scoped to that instance only which will not affect other DbContext instances.
 
 Parameter values can be set to a specific value or delegate expressions (Func<object> or Func<DbContext, object>).
 
@@ -138,7 +138,7 @@ Global parameter values can also be changed using the SetFilterGlobalParameterVa
 
 ## Conditionally Enabling Filters
 
-Filters can also be enabled conditionally and you will also need to define those conditions along with your filter definition.
+Filters can also be enabled conditionally and you will even need to define those conditions along with your filter definition.
 
 {% include template-example.html%} 
 {% highlight csharp %}
