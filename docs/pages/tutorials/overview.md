@@ -71,7 +71,7 @@ Each time the query is executed, this delegate will be evaluated to obtain the *
 
 ### Parameter Expressions
 
-Parameter delegate expressions can be specified as either a Func < object > or a Func<DbContext, object>.
+Parameter delegate expressions can be specified as either a **Func < object >** or a **Func<DbContext, object>**.
 
 {% include template-example.html%} 
 {% highlight csharp %}
@@ -121,7 +121,7 @@ modelBuilder.Filter("ContainsTest", (BlogEntry b, List<int> valueList) =>
 
 Filter parameter values can be changed easily within a DbContext instance, and these changes will be scoped to that instance only which will not affect other DbContext instances.
 
-Parameter values can be set to a specific value or delegate expressions (Func<object> or Func<DbContext, object>).
+Parameter values can be set to a specific value or delegate expressions (**Func < object >** or **Func<DbContext, object>**).
 
 {% include template-example.html%} 
 {% highlight csharp %}
