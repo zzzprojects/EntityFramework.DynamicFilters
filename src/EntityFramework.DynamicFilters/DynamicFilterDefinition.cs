@@ -6,7 +6,8 @@ using System.Linq.Expressions;
 
 namespace EntityFramework.DynamicFilters
 {
-    internal class DynamicFilterDefinition
+    [Serializable]
+    public class DynamicFilterDefinition
     {
         /// <summary>
         /// Unique ID assigned to each distinct filter.  Used to find unique filters on an entity
@@ -22,16 +23,24 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         public string ColumnName { get; private set; }
 
+
+
+        [NonSerialized]
+        private LambdaExpression _predicate;
+
+
         /// <summary>
         /// Set if the filter is a LambdaExpression.  Null if filter is a single column equality filter.
-        /// </summary>
-        public LambdaExpression Predicate { get; private set; }
+        /// </summary>        
+
+        public LambdaExpression Predicate { get { return _predicate; } private set { _predicate = value; } }
 
         public Type CLRType { get; private set; }
 
         public DynamicFilterOptions Options { get; private set; }
 
-        public string AttributeName { get { return string.Concat(DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX, DynamicFilterConstants.DELIMETER, CLRType.Name, DynamicFilterConstants.DELIMETER, FilterName); } }
+        public string AttributeName { get { return DynamicFilterConstants.ATTRIBUTE_NAME_PREFIX; } }
+
 
         internal DynamicFilterDefinition(Guid id, string filterName, LambdaExpression predicate, string columnName, Type clrType, DynamicFilterOptions options)
         {
@@ -81,6 +90,7 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="dbParameter"></param>
         /// <returns></returns>
+
         public static Tuple<string, string, DataSpace> GetFilterAndParamFromDBParameter(string dbParameter)
         {
             if (!dbParameter.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
@@ -89,7 +99,8 @@ namespace EntityFramework.DynamicFilters
             //  parts are:
             //  1 = Fixed string constant (DynamicFilterConstants.PARAMETER_NAME_PREFIX)
             //  2 = Index number used to look up the Filter & Parameter name
-            var parts = dbParameter.Split(new string[] { DynamicFilterConstants.DELIMETER }, StringSplitOptions.None);
+            var parts = dbParameter.Split(new string[] { DynamicFilterConstants.DELIMETER
+    }, StringSplitOptions.None);
             if (parts.Length != 2)
                 throw new ApplicationException(string.Format("Invalid format for Dynamic Filter parameter name: {0}", dbParameter));
 
