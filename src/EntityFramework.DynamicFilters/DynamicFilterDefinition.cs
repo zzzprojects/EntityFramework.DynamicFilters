@@ -90,7 +90,6 @@ namespace EntityFramework.DynamicFilters
         /// </summary>
         /// <param name="dbParameter"></param>
         /// <returns></returns>
-
         public static Tuple<string, string, DataSpace> GetFilterAndParamFromDBParameter(string dbParameter)
         {
             if (!dbParameter.StartsWith(DynamicFilterConstants.PARAMETER_NAME_PREFIX))
@@ -99,8 +98,7 @@ namespace EntityFramework.DynamicFilters
             //  parts are:
             //  1 = Fixed string constant (DynamicFilterConstants.PARAMETER_NAME_PREFIX)
             //  2 = Index number used to look up the Filter & Parameter name
-            var parts = dbParameter.Split(new string[] { DynamicFilterConstants.DELIMETER
-    }, StringSplitOptions.None);
+            var parts = dbParameter.Split(new string[] { DynamicFilterConstants.DELIMETER }, StringSplitOptions.None);
             if (parts.Length != 2)
                 throw new ApplicationException(string.Format("Invalid format for Dynamic Filter parameter name: {0}", dbParameter));
 
