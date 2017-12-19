@@ -12,6 +12,7 @@ namespace EntityFramework.DynamicFilters
     {
         public MyDbConfiguration() : base()
         {
+            this.SetMetadataAnnotationSerializer("DynamicFilter", () => new DynamicFilterSerializer());
             this.SetModelStore(new DefaultDbModelStore(Directory.GetCurrentDirectory()));
         }
     }
