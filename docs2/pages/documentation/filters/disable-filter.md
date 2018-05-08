@@ -6,12 +6,12 @@ permalink: disable-filter
 
 DisableFilter selectively disable the filter which is globally enabled. 
 
-{% include template-example.html%} 
-{% highlight csharp %}
+
+```csharp
 
 context.DisableFilter("IsDeleted");
 
-{% endhighlight %}
+```
 
 Disabling a globally enabled filter will apply only to that DbContext and it will not affect any other DbContext instances.
 
@@ -19,9 +19,9 @@ Disabling a globally enabled filter will apply only to that DbContext and it wil
 
 DisableFilterGlobally disables the filter globally and it Can be enabled as needed via DbContext.EnableFilter().
 
-{% include template-example.html%} 
-{% highlight csharp %}
+
+```csharp
 
 modelBuilder.DisableFilterGlobally("IsDeleted");
 
-{% endhighlight %}
+```

@@ -8,8 +8,8 @@ Prevent the inclusion of conditions in the sql query used to enable/disable filt
 
 If you will never require the need to enable or disable filters at any time during the application life cycle, you can prevent this condition entirely.
 
-{% include template-example.html%} 
-{% highlight csharp %}
+
+```csharp
 
 // disable a single filter
 modelBuilder.PreventDisabledFilterConditions("IsDeleted");
@@ -17,7 +17,7 @@ modelBuilder.PreventDisabledFilterConditions("IsDeleted");
 // disable all filters defined up to calling this method
 modelBuilder.PreventAllDisabledFilterConditions();
 
-{% endhighlight %}
+```
 
  - Once this is set, it cannot be undone because EF only gives us 1 shot at including those conditions.
  - It will apply to all filters defined at the time this method is called.  

@@ -6,11 +6,11 @@ permalink: clear-scoped-parameters
 
 ClearScopedParameters clear all parameter values within the DbContext scope.
 
-{% include template-example.html%} 
-{% highlight csharp %}
+
+```csharp
 
 context.ClearScopedParameters();
 
-{% endhighlight %}
+```
 
 
