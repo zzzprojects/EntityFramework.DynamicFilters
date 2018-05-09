@@ -1,6 +1,4 @@
----
-permalink: oracle
----
+# Oracle
 
 ## Oracle Support
 

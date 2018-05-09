@@ -1,6 +1,4 @@
----
-permalink: set-filter-global-parameter-value
----
+# SetFilterGlobalParameterValue
 
 ## Definition
 

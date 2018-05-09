@@ -1,6 +1,4 @@
----
-permalink: set-filter-scoped-parameter-value
----
+# SetFilterScopedParameterValue
 
 SetFilterScopedParameterValue sets the parameter for a filter within the current DbContext scope.  Once the DbContext is disposed, this parameter will no longer be in scope and will be removed.
 

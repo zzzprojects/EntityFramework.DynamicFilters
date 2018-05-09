@@ -1,6 +1,4 @@
----
-permalink: disable-all-filters
----
+# DisableAllFilters
 
 ## Definition
 

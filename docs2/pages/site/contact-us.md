@@ -1,6 +1,4 @@
----
-permalink: contact-us
----
+# Contact Us
 
 <div class="container" style="margin-top: 60px;">
 	<div class="row">

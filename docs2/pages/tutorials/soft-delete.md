@@ -1,6 +1,4 @@
----
-permalink: soft-delete
----
+# Soft Delete
 
 ## Soft Delete
 Soft Delete is a mechanism in which a record or many records are marked in a database for deletion or to temporarily prevent it from being selected.

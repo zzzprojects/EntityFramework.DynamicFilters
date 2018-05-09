@@ -1,6 +1,4 @@
----
-permalink: sql-compact
----
+# SQL Compact
 
 ## SQL Server CE Support
 

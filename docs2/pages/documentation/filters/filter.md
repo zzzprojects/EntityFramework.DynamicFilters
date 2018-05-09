@@ -1,6 +1,4 @@
----
-permalink: filter
----
+# Filter
 
 ## Definition
 

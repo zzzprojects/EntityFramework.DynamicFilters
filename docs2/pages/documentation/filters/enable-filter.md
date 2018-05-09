@@ -1,6 +1,4 @@
----
-permalink: enable-filter
----
+# EnableFilter
 
 ## Definition
 

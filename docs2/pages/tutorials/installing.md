@@ -1,6 +1,4 @@
----
-permalink: installing
----
+# Installing
 
 **EntityFramework Dynamic Filters** can be installed through NuGet.
 

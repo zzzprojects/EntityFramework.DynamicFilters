@@ -1,6 +1,4 @@
----
-permalink: multi-tenancy
----
+# Multi-Tenancy
 
 ## Multi Tenancy
 

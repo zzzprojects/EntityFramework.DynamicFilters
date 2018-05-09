@@ -1,6 +1,5 @@
----
-permalink: clear-scoped-parameters
----
+# ClearScopedParameters
+
 
 ### Parameter Expressions
 

@@ -1,6 +1,4 @@
----
-permalink: prevent-all-disabled-filter-conditions
----
+# PreventAllDisabledFilterConditions
 
 ## Definition
 

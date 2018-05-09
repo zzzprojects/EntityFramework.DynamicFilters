@@ -1,6 +1,4 @@
----
-permalink: filters
----
+# Filters
 
 <h2>Filters</h2>
 <ul>

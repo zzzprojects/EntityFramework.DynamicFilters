@@ -1,6 +1,4 @@
----
-permalink: filter-condition
----
+# Filter Condition
 
 <h2>Filter Condition</h2>
 <ul>

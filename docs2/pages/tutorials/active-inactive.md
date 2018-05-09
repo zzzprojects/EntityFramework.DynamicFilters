@@ -1,6 +1,4 @@
----
-permalink: active-inactive
----
+# Active/Inactive
 
 ## Active/Inactive
 
