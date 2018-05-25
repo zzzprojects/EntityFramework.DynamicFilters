@@ -14,14 +14,12 @@
                     <i class="fas fa-cloud-download-alt" aria-hidden="true"></i>
                     NuGet Download
                 </a>
-
                 <div class="counted-downloads">
                     Download count
                     <div class="actual-count-number">
                         440,000
                     </div>
                 </div>
-
             </div>
         </div>
 </div>
