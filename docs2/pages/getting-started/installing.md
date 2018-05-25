@@ -10,7 +10,7 @@
 					<i class="fa fa-cloud-download" aria-hidden="true"></i>
 					NuGet Downloadasd
 				</a>
-				<div>Download Count:</div>
+				<div>Download Count asddsasdasdas:</div>
 				<div class="download-count2"><img src="https://zzzprojects.github.io/images/nuget/entity-framework-dynamic-filters-big-d.svg"></div>
 			</div>
 		</div>
