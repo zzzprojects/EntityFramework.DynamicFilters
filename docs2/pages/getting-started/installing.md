@@ -2,7 +2,7 @@
 
 **EntityFramework Dynamic Filters** can be installed through NuGet.
 
-<div class="row">
+<div class="row container-box-download">
 	<div class="col-lg-6 box-download">
             <div class="box-content">
                 <div class="version">
