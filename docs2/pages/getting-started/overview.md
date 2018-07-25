@@ -6,6 +6,14 @@
 
 The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
 
+## Installing & Upgrading
+Download the <a href="/download">NuGet Package</a>
+
+## Requirements
+
+### Entity Framework Version
+
+- Entity Framework 6.x
 
 ## How It Works?
 The library can be easily installed through <a href="/installing">NuGet</a> which will add extensions methods automatically to DbContext and DbModelBuilder classes to access **Dynamic Filters**.
