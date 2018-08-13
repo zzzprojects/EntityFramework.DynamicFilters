@@ -92,7 +92,7 @@ modelBuilder.Filter("Notes_CurrentUser", (Note n) =>
 
 ```
 
-In the later declaration, the parameter value is set to the value of the **CurrentPersonID** property in the current DbContext instance.
+In the latest declaration, the parameter value is set to the value of the **CurrentPersonID** property in the current DbContext instance.
 
 ### LINQ Filters
 
@@ -155,4 +155,4 @@ modelBuilder.EnableFilter("BlogEntryFilter", () => !UserIsAdmin(Thread.CurrentPr
 
 ```
 
-In this example, a filter is defined on BlogEntry records to restrict to only the current AccountID. But the filter will only be enabled if the user is not an Admin user.
+In this example, a filter is defined on BlogEntry records to restrict only the current AccountID. But the filter will only be enabled if the user is not an Admin user.
