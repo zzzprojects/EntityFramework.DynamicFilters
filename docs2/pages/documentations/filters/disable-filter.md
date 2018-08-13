@@ -15,7 +15,7 @@ Disabling a globally enabled filter will apply only to that DbContext and it wil
 
 ## Disable Filter Globally
 
-DisableFilterGlobally disables the filter globally and it Can be enabled as needed via DbContext.EnableFilter().
+DisableFilterGlobally disables the filter globally and it can be enabled as needed via DbContext.EnableFilter().
 
 
 ```csharp
