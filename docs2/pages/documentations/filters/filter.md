@@ -53,7 +53,7 @@ modelBuilder.Filter("Notes_CurrentUser", (Note n) =>
 
 ```
 
-In the later declaration, the parameter value is set to the value of the **CurrentPersonID** property in the current DbContext instance.
+In the latest declaration, the parameter value is set to the value of the **CurrentPersonID** property in the current DbContext instance.
 
 ### LINQ Filters
 
