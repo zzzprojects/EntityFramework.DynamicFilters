@@ -15,7 +15,7 @@ context.SetFilterGlobalParameterValue("BlogEntryFilter", "accountID", 12345);
 
 ```
 
-Parameter values can be set to a specific value as showb in the above example, but it can also be set to a delegate expressions (**Func < object >** or **Func<DbContext, object>**).
+Parameter values can be set to a specific value as shown in the above example, but it can also be set to a delegate expression (**Func < object >** or **Func<DbContext, object>**).
 
 
 ```csharp
