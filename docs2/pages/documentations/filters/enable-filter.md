@@ -24,6 +24,6 @@ modelBuilder.EnableFilter("BlogEntryFilter", () => !UserIsAdmin(Thread.CurrentPr
 
 ```
 
-In this example, a filter is defined on BlogEntry records to restrict to only the current AccountID. But the filter will only be enabled if the user is not an Admin user.
+In this example, a filter is defined on BlogEntry records to restrict only the current AccountID. But the filter will only be enabled if the user is not an Admin user.
 
 
