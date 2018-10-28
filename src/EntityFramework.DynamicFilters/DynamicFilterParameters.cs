@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Text;
 
@@ -17,16 +18,16 @@ namespace EntityFramework.DynamicFilters
         /// Can (optionally) take a single parameter for the current DbContext instance.
         /// Only evaluated if not null and if Enabled == true.
         /// </summary>
-        public MulticastDelegate EnableIfCondition { get; set; }
+        public Func<DbContext, bool> EnableIfCondition { get; set; }
 
-        public ConcurrentDictionary<string, object> ParameterValues { get; private set; }
+        public ConcurrentDictionary<string, Func<DbContext, object>> ParameterValues { get; private set; }
 
         public DynamicFilterParameters()
         {
-            ParameterValues = new ConcurrentDictionary<string, object>();
+            ParameterValues = new ConcurrentDictionary<string, Func<DbContext, object>>();
         }
 
-        public void SetParameter(string parameterName, object value)
+        public void SetParameter(string parameterName, Func<DbContext, object> value)
         {
             ParameterValues.AddOrUpdate(parameterName, value, (k, v) => value);
         }

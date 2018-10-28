@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.DynamicFilters", "EntityFramework.DynamicFilters\EntityFramework.DynamicFilters.csproj", "{56E36AD1-E675-42F0-96CB-7F475E05E491}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z.Lab", "Z.Lab\Z.Lab.csproj", "{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}"
 EndProject
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Z.Lab.VB", "Z.Lab.VB\Z.Lab.VB.vbproj", "{6D24EDDC-96C8-495F-B1D2-0BFB74654173}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DelegateBenchmark", "DelegateBenchmark\DelegateBenchmark.csproj", "{8262C3EC-B191-4E3F-915B-3BB4433310DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8262C3EC-B191-4E3F-915B-3BB4433310DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8262C3EC-B191-4E3F-915B-3BB4433310DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8262C3EC-B191-4E3F-915B-3BB4433310DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8262C3EC-B191-4E3F-915B-3BB4433310DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
