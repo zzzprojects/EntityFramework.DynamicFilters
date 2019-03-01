@@ -17,10 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicFiltersTests", "DynamicFiltersTests\DynamicFiltersTests.csproj", "{F45314CD-2D33-4089-935E-F068ACA59202}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z.Lab", "Z.Lab\Z.Lab.csproj", "{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}"
-EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Z.Lab.VB", "Z.Lab.VB\Z.Lab.VB.vbproj", "{6D24EDDC-96C8-495F-B1D2-0BFB74654173}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,14 +35,6 @@ Global
 		{F45314CD-2D33-4089-935E-F068ACA59202}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F45314CD-2D33-4089-935E-F068ACA59202}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F45314CD-2D33-4089-935E-F068ACA59202}.Release|Any CPU.Build.0 = Release|Any CPU
-		{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{72DAF92D-633B-44DE-A55C-F6CD10BE15F0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6D24EDDC-96C8-495F-B1D2-0BFB74654173}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

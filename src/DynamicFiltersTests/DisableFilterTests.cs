@@ -204,6 +204,31 @@ namespace DynamicFiltersTests
             }
         }
 
+        [TestMethod]
+        public void DisableFilter_GloballyDisableEnableByContextCondition()
+        {
+            //  Verify with filters enabled
+            using (var context = new TestContext())
+            {
+                context.FiltersAreEnabled = false;
+                var list = context.EntityGSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+
+                context.FiltersAreEnabled = true;
+                list = context.EntityGSet.ToList();
+                Assert.IsTrue((list.Count == 4) && list.All(a => (a.ID < 5)));
+
+                // disable all filters and enable them back
+                context.DisableAllFilters();
+                context.EnableAllFilters();
+
+                //  Disable it in the current scope 
+                context.DisableFilter("EntityGFilter");
+                list = context.EntityGSet.ToList();
+                Assert.IsTrue(list.Count == 10);
+            }
+        }
+
         #region Models
 
         public class EntityA
