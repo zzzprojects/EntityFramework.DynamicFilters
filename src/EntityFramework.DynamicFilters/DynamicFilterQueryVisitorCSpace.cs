@@ -213,7 +213,7 @@ namespace EntityFramework.DynamicFilters
                             //  these relations!!) to try to map that information back to CSpace to figure out the correct properties of the FK conditions.
                             //  or...the models just need to contain the necessary "ID" properties for the FK relations so that they are available here
                             //  (in CSpace) for us to generate the necessary join conditions.
-                            throw new ApplicationException(string.Format("FK Constriant not found for association '{0}' - must directly specify foreign keys on model to be able to apply this filter", associationType.FullName));
+                            throw new ApplicationException($"FK constraint not found for association '{associationType.FullName}' - must directly specify foreign keys on model to be able to apply this filter");
                         }
 
                         //  Figure out if the "baseResults" are the from side or to side of the constraint so we can create the properties correctly
