@@ -9,7 +9,7 @@
     <Authors>EntityFramework.DynamicFilters</Authors>
     <Product>EntityFramework.DynamicFilters</Product>
     <Company>ZZZ Projects</Company>
-    <Version>3.0.2</Version>
+    <Version>3.1.0</Version>
     <Copyright>Copyright © ZZZ Projects, John Cachat</Copyright>
   </PropertyGroup>
 
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EntityFramework" Version="6.3.0-preview6-19304-03" />
+    <PackageReference Include="EntityFramework" Version="6.3.0-preview7-19363-02" />
   </ItemGroup>
 
   <Import Project="..\EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems" Label="Shared" />
