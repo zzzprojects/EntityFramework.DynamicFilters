@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>13d421cd-5dc4-4287-b1b2-110a9cb5e07f</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>EntityFramework.DynamicFilters.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterCommandInterceptor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterConvention.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterInterceptor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterParameters.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterQueryVisitorCSpace.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterQueryVisitorOld.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterQueryVisitorSSpace.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LambdaToDbExpressionVisitor.cs" />
+  </ItemGroup>
+</Project>

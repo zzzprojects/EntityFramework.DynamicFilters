@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>zzzproject.pfx</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
+    <PackageId>EntityFramework.DynamicFilters</PackageId>
+    <Authors>EntityFramework.DynamicFilters</Authors>
+    <Product>EntityFramework.DynamicFilters</Product>
+    <Company>ZZZ Projects</Company>
+    <Version>3.0.2</Version>
+    <Copyright>Copyright © ZZZ Projects, John Cachat</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;USE_CSPACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;USE_CSPACE</DefineConstants>
+    <DocumentationFile>bin\Release\EntityFramework.DynamicFilters.NetStandard21.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.3.0-preview6-19304-03" />
+  </ItemGroup>
+
+  <Import Project="..\EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems" Label="Shared" />
+
+</Project>
