@@ -11,6 +11,8 @@
     <Company>ZZZ Projects</Company>
     <Version>3.1.0</Version>
     <Copyright>Copyright © ZZZ Projects, John Cachat</Copyright>
+    <AssemblyName>EntityFramework.DynamicFilters</AssemblyName>
+    <RootNamespace>EntityFramework.DynamicFilters</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
