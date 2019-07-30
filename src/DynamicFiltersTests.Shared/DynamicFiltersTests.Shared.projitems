@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5f88787d-e19d-4d4e-a54c-e1acf3729a96</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>DynamicFiltersTests.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AccountTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BitwiseOperatorTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ChildCollectionFiltersTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ChildPropertyFiltersTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContainsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContextFilterTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataTypeTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DBInitializeTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DisableFilterTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EffortTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MultipleNavigationPropertiesTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NameTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NavigationPropertyTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NavigationPropertyTests2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NullTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PropertiesInExpressionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StringFunctionsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestContextBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TPHTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TPTTests.cs" />
+  </ItemGroup>
+</Project>
