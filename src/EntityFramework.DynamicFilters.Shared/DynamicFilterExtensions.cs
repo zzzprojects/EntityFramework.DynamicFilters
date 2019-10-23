@@ -934,10 +934,12 @@ namespace EntityFramework.DynamicFilters
             int paramIdx;
             //  Must include the "IS NOT NULL" part here.  When switched to using CSpace, the SQL was slightly different
             //  and found a case (covered by test case "AccountAndBlogEntries") where an embedded select was returning these parameters!
-            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", StringComparison.CurrentCultureIgnoreCase)) != -1)
+            StringBuilder b = new StringBuilder();
+            var curIdx = 0;
+            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", curIdx, StringComparison.OrdinalIgnoreCase)) != -1)
             {
-                int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.CurrentCultureIgnoreCase);
-                int endIdx = command.CommandText.IndexOf(")", paramIdx);
+                int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.OrdinalIgnoreCase);
+                int endIdx = command.CommandText.IndexOf(')', paramIdx);
 
                 if (endIdx == -1)
                 {
@@ -952,7 +954,7 @@ namespace EntityFramework.DynamicFilters
                     //  (note the extra ()'s which are not present in PostgreSQL).
                     //  So while we found the ending ")", we may or may not want to actually remove it.
                     //  Determine that by checking for the presence of an opening "(" in between the "or" and the parameter name
-                    var openingParenIndex = command.CommandText.IndexOf("(", startIdx);
+                    var openingParenIndex = command.CommandText.IndexOf('(', startIdx);
                     if ((openingParenIndex < startIdx) || (openingParenIndex > paramIdx))
                         endIdx--;       //  Do not have opening paren so do not remove the trailing ")"!
                 }
@@ -966,8 +968,14 @@ namespace EntityFramework.DynamicFilters
 #endif
                 }
 
-                command.CommandText = command.CommandText.Remove(startIdx, endIdx - startIdx + 1);
+                b.Append(command.CommandText.Substring(curIdx, startIdx - curIdx));
+
+                curIdx = endIdx + 1;
             }
+            if (curIdx < command.CommandText.Length)
+                b.Append(command.CommandText.Substring(curIdx, command.CommandText.Length - curIdx));
+
+            command.CommandText = b.ToString();
         }
 
         /// <summary>
