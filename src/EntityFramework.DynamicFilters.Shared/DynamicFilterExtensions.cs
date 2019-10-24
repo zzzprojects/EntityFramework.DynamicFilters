@@ -936,7 +936,8 @@ namespace EntityFramework.DynamicFilters
             //  and found a case (covered by test case "AccountAndBlogEntries") where an embedded select was returning these parameters!
             StringBuilder b = new StringBuilder();
             var curIdx = 0;
-            while ((paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", curIdx, StringComparison.OrdinalIgnoreCase)) != -1)
+            while ((curIdx < command.CommandText.Length) &&
+                   (paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", curIdx, StringComparison.OrdinalIgnoreCase)) != -1)
             {
                 int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.OrdinalIgnoreCase);
                 int endIdx = command.CommandText.IndexOf(')', paramIdx);
