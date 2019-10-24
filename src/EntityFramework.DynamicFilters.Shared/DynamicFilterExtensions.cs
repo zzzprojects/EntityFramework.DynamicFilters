@@ -964,7 +964,7 @@ namespace EntityFramework.DynamicFilters
 #if (DEBUG)
                     throw new ApplicationException(string.Format("Failed to find start or end index of remove filter clause for parameter name {0}", param.ParameterName));
 #else
-                    return;
+                    break;
 #endif
                 }
 
