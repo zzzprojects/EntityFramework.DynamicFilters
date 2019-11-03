@@ -80,12 +80,93 @@ namespace EntityFramework.DynamicFilters
 
         #region ExpressionVisitor Overrides
 
+        private ConstantExpression GetByteConstant(Expression expression)
+        {
+            if (expression.NodeType != ExpressionType.Constant || expression.Type != typeof(int))
+                return null;
+
+            var exprValue = (int)((ConstantExpression)expression).Value;
+            if (exprValue >= Byte.MinValue && exprValue <= Byte.MaxValue)
+            {
+                return Expression.Constant((byte)exprValue);
+            }
+
+            return null;
+        }
+
+        private Expression GetInnerOperand(Expression expression)
+        {
+            switch (expression.NodeType) {
+                case ExpressionType.Convert:
+                    var node = expression as UnaryExpression;
+                    if (node != null && node.Method == null)
+                        return node.Operand;
+                    return null;
+                case ExpressionType.Constant:
+                    return expression;
+                default:
+                    // Don't support any other types of expressions
+                    return null;
+            }
+        }
+
+        private BinaryExpression OptimizeByteEnumComparisons(BinaryExpression node)
+        {
+            if (node.Method != null)
+                return node;
+
+            var leftNode = node.Left;
+            var rightNode = node.Right;
+            if ((leftNode.Type != typeof(int) && leftNode.Type != typeof(byte)) || 
+                (rightNode.Type != typeof(int) && rightNode.Type != typeof(byte)))
+                return node;
+
+            Expression leftOperand = GetInnerOperand(leftNode);
+            Expression rightOperand = GetInnerOperand(rightNode);
+
+            if (leftOperand == null || rightOperand == null)
+                return node;
+
+            var leftIsByteEnum = leftOperand.Type.IsEnum && leftOperand.Type.GetEnumUnderlyingType() == typeof(byte);
+            var rightIsByteEnum = rightOperand.Type.IsEnum && rightOperand.Type.GetEnumUnderlyingType() == typeof(byte);
+
+            if (!leftIsByteEnum && !rightIsByteEnum)
+                return node;
+
+            if (leftIsByteEnum)
+                leftOperand = Expression.Convert(leftOperand, typeof(byte));
+            else
+                leftOperand = GetByteConstant(leftOperand);
+
+            if (rightIsByteEnum)
+                rightOperand = Expression.Convert(rightOperand, typeof(byte));
+            else
+                rightOperand = GetByteConstant(rightOperand);
+
+            if (leftOperand == null || rightOperand == null)
+                return node;
+
+            return Expression.MakeBinary(node.NodeType, leftOperand, rightOperand);
+        }
+
         protected override Expression VisitBinary(BinaryExpression node)
         {
 #if (DEBUG_VISITS)
             System.Diagnostics.Debug.Print("VisitBinary: {0}", node);
 #endif
 
+            switch (node.NodeType)
+            {
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                    node = OptimizeByteEnumComparisons(node);
+                    break;
+            }
+            
             var expression = base.VisitBinary(node) as BinaryExpression;
 
             DbExpression dbExpression;
