@@ -80,7 +80,12 @@ namespace EntityFramework.DynamicFilters
 
         #region ExpressionVisitor Overrides
 
-        private ConstantExpression GetByteConstant(Expression expression)
+        /// <summary>
+        /// Attempts to try convert the expression into a byte. The expression must be a constant and in range of a byte.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns>A expression converted to byte or null if the expression was not a constant or in range of a byte.</returns>
+        private ConstantExpression TryGetByteConstant(Expression expression)
         {
             if (expression.NodeType != ExpressionType.Constant || expression.Type != typeof(int))
                 return null;
@@ -94,6 +99,9 @@ namespace EntityFramework.DynamicFilters
             return null;
         }
 
+        /// <summary>Gets inner operand.</summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns>The inner operand.</returns>
         private Expression GetInnerOperand(Expression expression)
         {
             switch (expression.NodeType) {
@@ -110,6 +118,10 @@ namespace EntityFramework.DynamicFilters
             }
         }
 
+        /// <summary>If possible, we try to cast both side to byte otherwise we return the current BinaryExpression.</summary>
+        /// <param name="node">The node.</param>
+        /// <remarks>Pull: https://github.com/zzzprojects/EntityFramework.DynamicFilters/pull/164 </remarks>
+        /// <returns>The BinaryExpression we try to cast both side to byte otherwise we return the current BinaryExpression.</returns>
         private BinaryExpression OptimizeByteEnumComparisons(BinaryExpression node)
         {
             if (node.Method != null)
@@ -136,12 +148,12 @@ namespace EntityFramework.DynamicFilters
             if (leftIsByteEnum)
                 leftOperand = Expression.Convert(leftOperand, typeof(byte));
             else
-                leftOperand = GetByteConstant(leftOperand);
+                leftOperand = TryGetByteConstant(leftOperand);
 
             if (rightIsByteEnum)
                 rightOperand = Expression.Convert(rightOperand, typeof(byte));
             else
-                rightOperand = GetByteConstant(rightOperand);
+                rightOperand = TryGetByteConstant(rightOperand);
 
             if (leftOperand == null || rightOperand == null)
                 return node;
