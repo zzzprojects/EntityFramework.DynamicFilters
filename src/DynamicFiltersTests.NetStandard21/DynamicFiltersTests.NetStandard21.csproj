@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Effort.EF6" Version="2.2.1" />
-    <PackageReference Include="EntityFramework" Version="6.3.0-preview7-19363-02" />
+    <PackageReference Include="EntityFramework" Version="6.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />

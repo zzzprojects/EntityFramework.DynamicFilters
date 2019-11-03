@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -9,7 +9,7 @@
     <Authors>EntityFramework.DynamicFilters</Authors>
     <Product>EntityFramework.DynamicFilters</Product>
     <Company>ZZZ Projects</Company>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <Copyright>Copyright © ZZZ Projects, John Cachat</Copyright>
     <AssemblyName>EntityFramework.DynamicFilters</AssemblyName>
     <RootNamespace>EntityFramework.DynamicFilters</RootNamespace>
@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EntityFramework" Version="6.3.0-preview7-19363-02" />
+    <PackageReference Include="EntityFramework" Version="6.3.0" />
   </ItemGroup>
 
   <Import Project="..\EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems" Label="Shared" />
