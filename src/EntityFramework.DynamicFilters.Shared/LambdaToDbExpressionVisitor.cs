@@ -816,7 +816,7 @@ namespace EntityFramework.DynamicFilters
             }
 
             // "00001".Substring(0, 5) ==> "00001" == SUBSTRING('00001', 1, 5) ==> so + 1 for start
-            DbExpression dbExpression = EdmFunctions.Substring(srcExpression, DbExpressionBuilder.Plus(DbExpressionBuilder.Constant(1), start), length);
+            DbExpression dbExpression = EdmFunctions.Substring(srcExpression, DbExpressionBuilder.Plus(start, DbExpressionBuilder.Constant(1)), length);
 
             MapExpressionToDbExpression(expression, dbExpression);
             return expression;
