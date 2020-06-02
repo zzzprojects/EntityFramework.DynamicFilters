@@ -605,6 +605,9 @@ namespace EntityFramework.DynamicFilters
                 case "ToUpper":
                     expression = MapSimpleExpression(node, EdmFunctions.ToUpper);
                     break;
+                case "Substring":
+	                expression = MapStringSubstringExpression(node);
+                    break;
                 default:
                     //  Anything else is invoked and handled as a constant.  This allows us to handle user-defined methods.
                     //  If this evaluates to something that is not a constant, it will throw an exception...which is what we used to do anyway.
@@ -778,6 +781,42 @@ namespace EntityFramework.DynamicFilters
 
                 dbExpression = DbExpressionBuilder.Like(srcExpression, value);
             }
+
+            MapExpressionToDbExpression(expression, dbExpression);
+            return expression;
+        }
+
+        private Expression MapStringSubstringExpression(MethodCallExpression node)
+        {
+            var expression = base.VisitMethodCall(node) as MethodCallExpression;
+
+            // NEED CHECK TEXT FOR EXCEPTION!!
+            // DbFunctionExpression.Substring have 2 argument, so no support for now for Substring with 1 argument (because need to do length with DbFunctionExpression... if only one argument...)
+            if ((expression.Arguments == null) || (expression.Arguments.Count != 2))
+                throw new ApplicationException("Did not find exactly 2 Argument for Substring function, start and length");
+
+            DbExpression srcExpression = GetDbExpressionForExpression(expression.Object);
+
+            var start = GetDbExpressionForExpression(expression.Arguments[0]);
+            var length = GetDbExpressionForExpression(expression.Arguments[1]);
+
+            // same security used in Like, not sur why just check ConstantExpression, but I do same.
+            if (expression.Arguments[0] is ConstantExpression &&
+                (start == null || ((DbConstantExpression) start).Value == null))
+            {
+                // start
+                throw new NullReferenceException("NEED TEXT!");
+            }
+
+            if (expression.Arguments[1] is ConstantExpression &&
+                (length == null || ((DbConstantExpression)length).Value == null))
+            {
+                // length
+                throw new NullReferenceException("NEED TEXT!");
+            }
+
+            // "00001".Substring(0, 5) ==> "00001" == SUBSTRING('00001', 1, 5) ==> so + 1 for start
+            DbExpression dbExpression = EdmFunctions.Substring(srcExpression, DbExpressionBuilder.Plus(DbExpressionBuilder.Constant(1), start), length);
 
             MapExpressionToDbExpression(expression, dbExpression);
             return expression;
