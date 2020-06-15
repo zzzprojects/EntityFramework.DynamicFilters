@@ -25,13 +25,15 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DynamicFiltersTests.Shared"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicFiltersTests.NetStandard21", "DynamicFiltersTests.NetStandard21\DynamicFiltersTests.NetStandard21.csproj", "{89FAD78B-B06F-4A31-B9C0-E521803EE0E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z.Lab", "Z.Lab\Z.Lab.csproj", "{9A4EB2AB-5FDC-4947-AC90-372E43383BC3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.DynamicFilters.Core.Lab", "EntityFramework.DynamicFilters.Lab\EntityFramework.DynamicFilters.Core.Lab.csproj", "{A55AE109-B6AD-46AC-8275-4A529A130ED9}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{13d421cd-5dc4-4287-b1b2-110a9cb5e07f}*SharedItemsImports = 13
 		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{56e36ad1-e675-42f0-96cb-7f475e05e491}*SharedItemsImports = 4
 		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{5f88787d-e19d-4d4e-a54c-e1acf3729a96}*SharedItemsImports = 13
+		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{89fad78b-b06f-4a31-b9c0-e521803ee0e8}*SharedItemsImports = 5
+		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{e83d9d17-04e8-4ed8-b0e5-135324ddd673}*SharedItemsImports = 5
 		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{f45314cd-2d33-4089-935e-f068aca59202}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,10 +61,10 @@ Global
 		{89FAD78B-B06F-4A31-B9C0-E521803EE0E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89FAD78B-B06F-4A31-B9C0-E521803EE0E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89FAD78B-B06F-4A31-B9C0-E521803EE0E8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9A4EB2AB-5FDC-4947-AC90-372E43383BC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9A4EB2AB-5FDC-4947-AC90-372E43383BC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9A4EB2AB-5FDC-4947-AC90-372E43383BC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9A4EB2AB-5FDC-4947-AC90-372E43383BC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
