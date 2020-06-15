@@ -34,10 +34,10 @@ namespace EntityFramework.DynamicFilters.Core.Lab
 		}
 		public class EntityContext : DbContext
 		{
-			public static string DataBaseName = "KillMe";
+			public static string DatabaseName = "EFDynamicFiltersLab";
 			// [REPLACE] is in Beta.
 			public static string ConnectionString =
-				("Server=[REPLACE];Initial Catalog = [BD]; Integrated Security = true; Connection Timeout = 35; Persist Security Info=True").Replace("[REPLACE]", Environment.MachineName).Replace("[BD]", DataBaseName);
+				("Server=[REPLACE];Initial Catalog = [BD]; Integrated Security = true; Connection Timeout = 35; Persist Security Info=True").Replace("[REPLACE]", Environment.MachineName).Replace("[BD]", DatabaseName);
 
 			public EntityContext() : base(ConnectionString)
 			{
