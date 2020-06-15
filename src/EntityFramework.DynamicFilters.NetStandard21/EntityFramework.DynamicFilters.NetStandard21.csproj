@@ -21,7 +21,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DefineConstants>TRACE;USE_CSPACE</DefineConstants>
-    <DocumentationFile>bin\Release\EntityFramework.DynamicFilters.NetStandard21.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\EntityFramework.DynamicFilters.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
