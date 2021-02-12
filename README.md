@@ -8,7 +8,7 @@ This library is powered by [Entity Framework Extensions](https://entityframework
 </kbd>
 </a>
 
-# Dynamic Global Filters for Entity Framework
+# What's Entity Framework Dynamic Filters?
 
 Create global and scoped filters for Entity Framework queries.  The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
 
@@ -190,3 +190,36 @@ Oracle is supported using the [Official Oracle ODP.NET, Managed Entity Framework
 SQL Server CE is supported with the following limitations:
 * The SQL Server CE provider does not support modifying the CommandText property during SQL interception.  That is necessary in order to do some of the dynamic parameter value replacements.  This means that Contains(IEnumerable<T>) is not supported on SQL Server CE and will throw an exception.
 * SQL Server CE does not support the "like @value+'%'" syntax (see https://stackoverflow.com/questions/1916248/how-to-use-parameter-with-like-in-sql-server-compact-edition).  So string.StartsWith(@value) is not supported and will throw a Format exception.
+
+## Usefull links
+
+- [Website](https://entityframework-dynamicfilters.net/)
+- [Documentation](https://entityframework-dynamicfilters.net/filter)
+- [Online Examples](https://entityframework-dynamicfilters.net/online-examples) 
+
+## Contribute
+
+You want to help us? 
+Your donation directly helps us maintaining and growing ZZZ Free Projects. We can’t thank you enough for your support.
+
+### Why should I contribute to this free & open source library?
+We all love free and open source libraries!
+But there is a catch! Nothing is free in this world.
+Contributions allow us to spend more of our time on: Bug Fix, Content Writing, Development and Support.
+
+We NEED your help. Last year alone, we spent over **3000 hours** maintaining all our open source libraries.
+
+### How much should I contribute?
+Any amount is much appreciated. All our libraries together have more than 100 million downloads, if everyone could contribute a tiny amount, it would help us to make the .NET community a better place to code!
+
+Another great free way to contribute is  **spreading the word** about the library!
+ 
+A **HUGE THANKS** for your help.
+
+## More Projects
+
+- [EntityFramework Extensions](https://entityframework-extensions.net/)
+- [Dapper Plus](https://dapper-plus.net/)
+- [C# Eval Expression](https://eval-expression.net/)
+- and much more! 
+To view all our free and paid librariries visit our [website](https://zzzprojects.com/).
