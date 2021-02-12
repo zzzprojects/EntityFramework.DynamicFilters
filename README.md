@@ -18,9 +18,6 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
-## Installation
-The package is also available on NuGet: [EntityFramework.DynamicFilters](https://www.nuget.org/packages/EntityFramework.DynamicFilters).
-
 ## Changes in Version 2
 * Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  Also includes support for Any() and All() on child collections.
 * Filter parameter values can now reference the current DbContext instance.  See [Parameter Expressions](#parameter-expressions).
@@ -196,6 +193,7 @@ SQL Server CE is supported with the following limitations:
 - [Website](https://entityframework-dynamicfilters.net/)
 - [Documentation](https://entityframework-dynamicfilters.net/filter)
 - [Online Examples](https://entityframework-dynamicfilters.net/online-examples) 
+- [Nuget](https://www.nuget.org/packages/EntityFramework.DynamicFilters)
 
 ## Contribute
 
