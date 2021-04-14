@@ -19,7 +19,7 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
 ## Changes in Version 2
-* Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  It qlso includes support for Any() and All() on child collections.
+* Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  It also includes support for Any() and All() on child collections.
 * Filter parameter values can now reference the current DbContext instance.  See [Parameter Expressions](#parameter-expressions).
 * Filters can be enabled conditionally via a delegate, just like parameter values.  See [Conditionally Enabling Filters](#conditionally-enabling-filters).
 * Added options to filters to control how/when they are applied to entities.  See [Filter Options](#filter-options)
