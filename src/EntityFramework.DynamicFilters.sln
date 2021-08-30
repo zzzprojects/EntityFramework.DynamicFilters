@@ -25,14 +25,22 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DynamicFiltersTests.Shared"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicFiltersTests.NetStandard21", "DynamicFiltersTests.NetStandard21\DynamicFiltersTests.NetStandard21.csproj", "{89FAD78B-B06F-4A31-B9C0-E521803EE0E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.DynamicFilters.Core.Lab", "EntityFramework.DynamicFilters.Lab\EntityFramework.DynamicFilters.Core.Lab.csproj", "{A55AE109-B6AD-46AC-8275-4A529A130ED9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EntityFramework.DynamicFilters.Core.Lab", "EntityFramework.DynamicFilters.Lab\EntityFramework.DynamicFilters.Core.Lab.csproj", "{A55AE109-B6AD-46AC-8275-4A529A130ED9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z.EntityFramework.Classic.DynamicFilters.Net40", "Z.EntityFramework.Classic.DynamicFilters.Net40\Z.EntityFramework.Classic.DynamicFilters.Net40.csproj", "{9014BFDD-8311-404A-8B3D-846A7C4D32C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Z.EntityFramework.Classic.DynamicFilters.NetStandard20", "Z.EntityFramework.Classic.DynamicFilters.NetStandard20\Z.EntityFramework.Classic.DynamicFilters.NetStandard20.csproj", "{24EBE85E-02C4-4FAE-B7E9-A4EA3C5FDE50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z.EntityFramework.Classic.DynamicFilters.Core.Lab", "Z.EntityFramework.Classic.DynamicFilters.Core.Lab\Z.EntityFramework.Classic.DynamicFilters.Core.Lab.csproj", "{6E1968E9-2BEE-4AF2-BDBD-6EC51000FB32}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{13d421cd-5dc4-4287-b1b2-110a9cb5e07f}*SharedItemsImports = 13
+		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{24ebe85e-02c4-4fae-b7e9-a4ea3c5fde50}*SharedItemsImports = 5
 		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{56e36ad1-e675-42f0-96cb-7f475e05e491}*SharedItemsImports = 4
 		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{5f88787d-e19d-4d4e-a54c-e1acf3729a96}*SharedItemsImports = 13
 		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{89fad78b-b06f-4a31-b9c0-e521803ee0e8}*SharedItemsImports = 5
+		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{9014bfdd-8311-404a-8b3d-846a7c4d32c7}*SharedItemsImports = 4
 		EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems*{e83d9d17-04e8-4ed8-b0e5-135324ddd673}*SharedItemsImports = 5
 		DynamicFiltersTests.Shared\DynamicFiltersTests.Shared.projitems*{f45314cd-2d33-4089-935e-f068aca59202}*SharedItemsImports = 4
 	EndGlobalSection
@@ -65,6 +73,18 @@ Global
 		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A55AE109-B6AD-46AC-8275-4A529A130ED9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9014BFDD-8311-404A-8B3D-846A7C4D32C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9014BFDD-8311-404A-8B3D-846A7C4D32C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9014BFDD-8311-404A-8B3D-846A7C4D32C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9014BFDD-8311-404A-8B3D-846A7C4D32C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24EBE85E-02C4-4FAE-B7E9-A4EA3C5FDE50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24EBE85E-02C4-4FAE-B7E9-A4EA3C5FDE50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24EBE85E-02C4-4FAE-B7E9-A4EA3C5FDE50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24EBE85E-02C4-4FAE-B7E9-A4EA3C5FDE50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E1968E9-2BEE-4AF2-BDBD-6EC51000FB32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E1968E9-2BEE-4AF2-BDBD-6EC51000FB32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E1968E9-2BEE-4AF2-BDBD-6EC51000FB32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E1968E9-2BEE-4AF2-BDBD-6EC51000FB32}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

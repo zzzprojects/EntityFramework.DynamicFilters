@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Z.EntityFramework.Classic.DynamicFilters</AssemblyName>
+    <RootNamespace>Z.EntityFramework.Classic.DynamicFilters</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>zzzproject.pfx</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;USE_CSPACE</DefineConstants>
+    <DocumentationFile>bin\Release\Z.EntityFramework.Classic.DynamicFilters.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Z.EntityFramework.Classic" Version="7.1.49" />
+  </ItemGroup>
+
+  <Import Project="..\EntityFramework.DynamicFilters.Shared\EntityFramework.DynamicFilters.Shared.projitems" Label="Shared" />
+
+</Project>
