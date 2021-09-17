@@ -2,6 +2,7 @@
 using System.Data.Entity.Core.Common.CommandTrees;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Infrastructure.Interception;
+using System.Data.Entity.Migrations.History;
 using System.Linq;
 
 namespace EntityFramework.DynamicFilters
@@ -16,6 +17,9 @@ namespace EntityFramework.DynamicFilters
                 var context = interceptionContext.DbContexts.FirstOrDefault();
                 if (context != null)
                 {
+                    // https://github.com/zzzprojects/EntityFramework.DynamicFilters/issues/153
+                    if (context is HistoryContext) return;
+
                     DbExpressionVisitor<DbExpression> visitor;
 #if (USE_CSPACE)
                     //  Intercepting CSpace instead of SSpace gives us access to all of the navigation properties

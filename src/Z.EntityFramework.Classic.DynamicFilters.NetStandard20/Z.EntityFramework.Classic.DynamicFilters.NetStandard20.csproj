@@ -6,6 +6,9 @@
     <RootNamespace>Z.EntityFramework.Classic.DynamicFilters</RootNamespace>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>zzzproject.pfx</AssemblyOriginatorKeyFile>
+    <Version>3.2.1</Version>
+    <Company>ZZZ Projects</Company>
+    <Copyright>ZZZ Projects</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
