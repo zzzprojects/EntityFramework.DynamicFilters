@@ -35,7 +35,7 @@ namespace EntityFramework.DynamicFilters
         /// enabled/disabled.  Once this is set, it cannot be undone because EF only gives us 1 shot at including those
         /// conditions.
         /// </summary>
-        private static HashSet<string> _PreventDisabledFilterConditions = new HashSet<string>();
+        private static ConcurrentDictionary<string, int> _PreventDisabledFilterConditions = new ConcurrentDictionary<string, int>();
 
         #endregion
 
@@ -66,7 +66,7 @@ namespace EntityFramework.DynamicFilters
         {
             _GlobalParameterValues = new ConcurrentDictionary<string, DynamicFilterParameters>();
             _ScopedParameterValues = new ConcurrentDictionary<DbContext, ConcurrentDictionary<string, DynamicFilterParameters>>();
-            _PreventDisabledFilterConditions = new HashSet<string>();
+            _PreventDisabledFilterConditions = new ConcurrentDictionary<string, int>();
         }
 
         #endregion
@@ -514,7 +514,7 @@ namespace EntityFramework.DynamicFilters
             //  And if there are multiple DbContexts being used, setting it once would apply to all of them.
             //  So tracking this per filter so it can at least be managed by filter name.
             foreach (var filterName in _GlobalParameterValues.Keys)
-                _PreventDisabledFilterConditions.Add(filterName);
+                _PreventDisabledFilterConditions.TryAdd(filterName, 1);
         }
 
         /// <summary>
@@ -530,7 +530,7 @@ namespace EntityFramework.DynamicFilters
             if (!_GlobalParameterValues.ContainsKey(filterName))
                 throw new ApplicationException(string.Format("Filter {0} not defined", filterName));
 
-            _PreventDisabledFilterConditions.Add(filterName);
+            _PreventDisabledFilterConditions.TryAdd(filterName, 1);
         }
 
         /// <summary>
@@ -542,7 +542,7 @@ namespace EntityFramework.DynamicFilters
         public static bool AreFilterDisabledConditionsAllowed(string filterName)
         {
             filterName = ScrubFilterName(filterName);
-            return !_PreventDisabledFilterConditions.Contains(filterName);
+            return !_PreventDisabledFilterConditions.ContainsKey(filterName);
         }
 
         #endregion
