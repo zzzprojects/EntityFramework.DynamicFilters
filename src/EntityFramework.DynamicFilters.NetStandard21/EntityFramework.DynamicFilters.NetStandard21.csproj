@@ -9,7 +9,7 @@
     <Authors>EntityFramework.DynamicFilters</Authors>
     <Product>EntityFramework.DynamicFilters</Product>
     <Company>ZZZ Projects</Company>
-    <Version>3.2.1</Version>
+    <Version>3.2.2</Version>
     <Copyright>Copyright © ZZZ Projects, John Cachat</Copyright>
     <AssemblyName>EntityFramework.DynamicFilters</AssemblyName>
     <RootNamespace>EntityFramework.DynamicFilters</RootNamespace>
