@@ -940,7 +940,7 @@ namespace EntityFramework.DynamicFilters
                    (paramIdx = command.CommandText.IndexOf(param.ParameterName + " IS NOT NULL", curIdx, StringComparison.OrdinalIgnoreCase)) != -1)
             {
                 int startIdx = command.CommandText.LastIndexOf("or", paramIdx, StringComparison.OrdinalIgnoreCase);
-                int endIdx = command.CommandText.IndexOf(')', paramIdx);
+                int endIdx = command.CommandText.IndexOf(")", paramIdx, StringComparison.Ordinal);
 
                 if (endIdx == -1)
                 {
@@ -955,7 +955,7 @@ namespace EntityFramework.DynamicFilters
                     //  (note the extra ()'s which are not present in PostgreSQL).
                     //  So while we found the ending ")", we may or may not want to actually remove it.
                     //  Determine that by checking for the presence of an opening "(" in between the "or" and the parameter name
-                    var openingParenIndex = command.CommandText.IndexOf('(', startIdx);
+                    var openingParenIndex = command.CommandText.IndexOf("(", startIdx, StringComparison.Ordinal);
                     if ((openingParenIndex < startIdx) || (openingParenIndex > paramIdx))
                         endIdx--;       //  Do not have opening paren so do not remove the trailing ")"!
                 }
@@ -996,7 +996,7 @@ namespace EntityFramework.DynamicFilters
             int prevStartIndex = 0;
             int paramStartIdx;
             bool isNotCondition = false;
-            while ((paramStartIdx = command.CommandText.IndexOf(param.ParameterName, prevStartIndex)) != -1)
+            while ((paramStartIdx = command.CommandText.IndexOf(param.ParameterName, prevStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
             {
                 int startIdx = FindLastComparisonOperator(command.CommandText, paramStartIdx, out isNotCondition);
                 if (startIdx == -1)
@@ -1058,11 +1058,11 @@ namespace EntityFramework.DynamicFilters
             //  possible for us to match on a condition that is earlier in the sql statement.
 
             //  MySql uses "!=" syntax.  Not possible to find both.
-            int notEqualIdx = commandText.LastIndexOf("!=", fromIdx, 10);
+            int notEqualIdx = commandText.LastIndexOf("!=", fromIdx, 10, StringComparison.Ordinal);
             if (notEqualIdx == -1)
-                notEqualIdx = commandText.LastIndexOf("<>", fromIdx, 10);
+                notEqualIdx = commandText.LastIndexOf("<>", fromIdx, 10, StringComparison.Ordinal);
 
-            int equalIdx = commandText.LastIndexOf("=", fromIdx, 10);
+            int equalIdx = commandText.LastIndexOf("=", fromIdx, 10, StringComparison.Ordinal);
             if (equalIdx == notEqualIdx + 1)    //  Don't want to match on the "=" in "!="
                 equalIdx = -1;
 
