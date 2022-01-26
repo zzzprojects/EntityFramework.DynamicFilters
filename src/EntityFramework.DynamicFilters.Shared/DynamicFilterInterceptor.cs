@@ -11,15 +11,15 @@ namespace EntityFramework.DynamicFilters
     {
         public void TreeCreated(DbCommandTreeInterceptionContext interceptionContext)
         {
+            // https://github.com/zzzprojects/EntityFramework.DynamicFilters/issues/153
+            if (DynamicFilterManager.ShouldIgnoreDynamicFilterInterceptor != null && DynamicFilterManager.ShouldIgnoreDynamicFilterInterceptor(interceptionContext)) return;
+
             var queryCommand = interceptionContext.Result as DbQueryCommandTree;
             if (queryCommand != null)
             {
                 var context = interceptionContext.DbContexts.FirstOrDefault();
                 if (context != null)
                 {
-                    // https://github.com/zzzprojects/EntityFramework.DynamicFilters/issues/153
-                    if (context is HistoryContext) return;
-
                     DbExpressionVisitor<DbExpression> visitor;
 #if (USE_CSPACE)
                     //  Intercepting CSpace instead of SSpace gives us access to all of the navigation properties

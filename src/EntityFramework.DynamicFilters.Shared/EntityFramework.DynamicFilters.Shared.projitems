@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterDefinition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterInterceptor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterParameters.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DynamicFilterQueryVisitorCSpace.cs" />
