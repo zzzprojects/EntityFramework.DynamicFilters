@@ -1,6 +1,0 @@
----
-permalink: articles
----
-
-## Articles
-
