@@ -18,6 +18,12 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
+## Do it support EF Core?
+
+**NO**, it doesn't support EF Core and there is no plan to support it.
+
+EF Core already have their one global query filter that will eventually be evolved in [Named query filter](https://github.com/dotnet/efcore/issues/8576)
+
 ## Changes in Version 2
 * Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  It also includes support for Any() and All() on child collections.
 * Filter parameter values can now reference the current DbContext instance.  See [Parameter Expressions](#parameter-expressions).
