@@ -8,6 +8,8 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
+Read more on our [Website](https://entityframework-dynamicfilters.net/).
+
 ## Downloads
 
 [![nuget](https://img.shields.io/nuget/v/EntityFramework.DynamicFilters?logo=nuget&style=flat-square)](https://www.nuget.org/packages/EntityFramework.DynamicFilters)
