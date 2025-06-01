@@ -1,13 +1,3 @@
-## Library Powered By
-
-This library is powered by [Entity Framework Extensions](https://entityframework-extensions.net/?z=github&y=entityframework-dynamicfilters)
-
-<a href="https://entityframework-extensions.net/?z=github&y=entityframework-dynamicfilters">
-<kbd>
-<img src="https://zzzprojects.github.io/images/logo/entityframework-extensions-pub.jpg" alt="Entity Framework Extensions" />
-</kbd>
-</a>
-
 # What's Entity Framework Dynamic Filters?
 
 Create global and scoped filters for Entity Framework queries.  The filters are automatically applied to every query and can be used to support use cases such as Multi-Tenancy, Soft Deletes, Active/Inactive, etc.
@@ -18,11 +8,34 @@ Access to DynamicFilters is done via extension methods in the EntityFramework.Dy
 
 Supports MS SQL Server (including Azure), MySQL, Oracle (*see notes below), and PostgreSQL.
 
+## Downloads
+
+[![nuget](https://img.shields.io/nuget/v/EntityFramework.DynamicFilters?logo=nuget&style=flat-square)](https://www.nuget.org/packages/EntityFramework.DynamicFilters)
+[![nuget](https://img.shields.io/nuget/dt/EntityFramework.DynamicFilters?logo=nuget&style=flat-square)](https://www.nuget.org/packages/EntityFramework.DynamicFilters)
+
+```
+PM> NuGet\Install-Package EntityFramework.DynamicFilters
+```
+
+```
+> dotnet add package EntityFramework.DynamicFilters
+```
+
 ## Do it support EF Core?
 
 **NO**, it doesn't support EF Core and there is no plan to support it.
 
 EF Core already have their one global query filter that will eventually be evolved in [Named query filter](https://github.com/dotnet/efcore/issues/8576)
+
+## Sponsors
+
+ZZZ Projects owns and maintains **Entity Framework Dynamic Filters** as part of our [mission](https://zzzprojects.com/mission) to add value to the .NET community
+
+Through [Entity Framework Extensions](https://entityframework-extensions.net/?utm_source=zzzprojects&utm_medium=entityframeworkdynamicfilters) and [Dapper Plus](https://dapper-plus.net/?utm_source=zzzprojects&utm_medium=entityframeworkdynamicfilters), we actively sponsor and help key open-source libraries grow.
+
+[![Entity Framework Extensions](https://raw.githubusercontent.com/zzzprojects/EntityFramework.DynamicFilters/master/entity-framework-extensions-sponsor.png)](https://entityframework-extensions.net/bulk-insert?utm_source=zzzprojects&utm_medium=entityframeworkdynamicfilters)
+
+[![Dapper Plus](https://raw.githubusercontent.com/zzzprojects/EntityFramework.DynamicFilters/master/dapper-plus-sponsor.png)](https://dapper-plus.net/bulk-insert?utm_source=zzzprojects&utm_medium=entityframeworkdynamicfilters)
 
 ## Changes in Version 2
 * Added support for creating filters that reference child classes/navigation properties.  See [Issue #65](https://github.com/jcachat/EntityFramework.DynamicFilters/issues/65) for more details.  Requires that FK properties are defined on the models.  It also includes support for Any() and All() on child collections.
@@ -192,24 +205,6 @@ Oracle is supported using the [Official Oracle ODP.NET, Managed Entity Framework
 SQL Server CE is supported with the following limitations:
 * The SQL Server CE provider does not support modifying the CommandText property during SQL interception.  That is necessary in order to do some of the dynamic parameter value replacements.  This means that Contains(IEnumerable<T>) is not supported on SQL Server CE and will throw an exception.
 * SQL Server CE does not support the "like @value+'%'" syntax (see https://stackoverflow.com/questions/1916248/how-to-use-parameter-with-like-in-sql-server-compact-edition).  So string.StartsWith(@value) is not supported and will throw a Format exception.
-
-## Useful links
-
-- [Website](https://entityframework-dynamicfilters.net/)
-- [Documentation](https://entityframework-dynamicfilters.net/filter)
-- [Online Examples](https://entityframework-dynamicfilters.net/online-examples) 
-- [Nuget](https://www.nuget.org/packages/EntityFramework.DynamicFilters)
-
-## Contribute
-
-The best way to contribute is by **spreading the word** about the library:
-
- - Blog it
- - Comment it
- - Star it
- - Share it
- 
-A **HUGE THANKS** for your help.
 
 ## More Projects
 
